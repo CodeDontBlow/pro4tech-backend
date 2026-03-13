@@ -1,0 +1,15 @@
+node_modules/
+package-lock.json
+yarn.lock
+dist/
+.env
+.vscode/
+.idea/
+.DS_Store
+.devcontainer/
+docker-compose.yml
+Dockerfile
+.dockerignore
+.gitignore
+LICENSE
+README.md

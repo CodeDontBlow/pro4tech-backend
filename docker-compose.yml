@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pro4tech_backend
+    ports:
+      - '3333:3333'
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app # código local
+      - node_modules_cache:/app/node_modules # volume NOMEADO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pro4tech_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pro4tech_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pro4tech_net
+
+volumes:
+  postgres_data:
+    name: pro4tech_postgres_data
+  node_modules_cache: # ← ADICIONAR ESTE VOLUME NOMEADO
+    name: pro4tech_node_modules
+
+networks:
+  pro4tech_net:
+    name: pro4tech_network
+    driver: bridge
