@@ -42,6 +42,23 @@ No VS Code, procure na barra de pesquisa por:
 Dev Containers: Rebuild and Reopen in Container
 ```
 
+### 4. Verifique se a aplicação está funcionando
+
+Você pode acompanhar os logs do container de duas formas:
+
+#### Opção 1 — Via Docker CLI (Terminal)
+
+```bash
+docker logs -f pro4tech_backend
+```
+
+#### Opção 2 — Via Docker Desktop (Interface gráfica)
+- Abra o Docker Desktop
+- Vá em Containers
+- Clique no container pro4tech_backend
+- Abra a aba Logs para visualizar os logs em tempo real
+
+
 ## Estrutura do Projeto
 
 ```
