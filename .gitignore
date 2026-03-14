@@ -4,6 +4,9 @@
 /build
 /tmp
 
+# Prisma 
+generated/
+
 # Logs
 logs
 *.log
