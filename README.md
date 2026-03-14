@@ -1,89 +1,73 @@
-# pro4tech-backend
+# Pro4Tech Backend
 
-Backend API para o projeto Pro4Tech.
+Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitetura modular, Prisma ORM para gerenciamento de banco de dados e Docker para containerização.
 
-## Como rodar a API
+## Tecnologias Utilizadas
 
-### Pré-requisitos:
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-- [Docker](https://www.docker.com/)
-- [Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) no VSCode
+## Pré-requisitos
+- **[Docker](https://www.docker.com/)** - Para containerização
+- **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
+- **[Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)** - Extensão do VS Code
 
-### Configure as variáveis de ambiente:
+## Como Rodar
 
-- Crie um arquivo `.env` na raiz do projeto copiando o conteúdo do arquivo `.env.example`. Esse arquivo contém todas as variáveis necessárias para o funcionamento da aplicação.
-
-### Execução do servidor:
-
-- Abra o VSCode, barra de pesquisa, procure e execute:
-  - `Dev Containers: Rebuild and Reopen in Container`
-- Para abrir o container novamente:
-  - `Dev Containers: Reopen in Container`
-
-### Comandos Docker
+### 1. Clone o repositório
 
 ```bash
-
-# Ver imagens Docker disponíveis localmente.
-docker image ls
-
-# Ver todos os containers em execução
-docker ps -a
-
-# Ver logs do container backend
-docker logs pro4tech_backend
-
-# Acessar o terminal do container
-docker exec -it pro4tech_backend sh
-
-# Listar redes docker
-docker network ls
-
-# Ver detalhes da rede do projeto
-docker network inspect pro4tech_network
-
-# Listar volumes
-docker volume ls
-
-# Ver detalhes do volume do PostgreSQL
-docker volume inspect pro4tech_postgres_data
-
-# Visualizar logs em tempo real
-docker logs -f pro4tech_backend
-
-# Ver últimas 10 linhas do log
-docker logs --tail 10 pro4tech_backend
+git clone https://github.com/seu-usuario/pro4tech-backend.git
+cd pro4tech-backend
 ```
 
-### Comandos do .devcontainer
+### 2. Configure as variáveis de ambiente
+
+Crie o arquivo `.env` baseado no `.env.example`:
 
 ```bash
-# Reconstruir e Abrir ( Mudou algo FORA do código )
+cp .env.example .env
+```
+
+> Edite o arquivo `.env` com suas configurações.
+
+### 3. Inicie o Dev Container
+
+No VS Code, procure na barra de pesquisa por:
+
+```
 Dev Containers: Rebuild and Reopen in Container
-
-# Reabrir o container ( Mudou só código )
-Dev Containers: Reopen in Container
 ```
 
-### Comandos Prisma
+## Estrutura do Projeto
 
-```bash
-# Gerar cliente Prisma
-npx prisma generate
-
-# Abrir Prisma Studio
-npx prisma studio
-
-# Criar migration
-npx prisma migrate dev --name nome_da_migration
-
-# Resetar banco de dados
-npx prisma migrate reset
 ```
-
-### Outro comandos
-
-```bash
-# Formatar código
-npx prettier . --write
+pro4tech-backend/
+│
+├── 📂 .devcontainer/       # Configuração Dev Containers
+├── 📂 docs/                # Documentação
+│   └── comandos.md         # Comandos e guias detalhados
+│
+├── 📂 prisma/              # Prisma ORM
+│   └── schema.prisma       # Schema do banco de dados
+│
+├── 📂 src/                 # Código fonte
+│   ├── main.ts             # Entry point
+│   ├── app.module.ts       # Módulo raiz
+│   └── 📂 prisma/          # Módulo Prisma
+│
+├── 📂 test/                # Testes E2E
+├── 📄 docker-compose.yml   # Orquestração de containers
+├── 📄 Dockerfile           # Imagem Docker
+└── 📄 package.json         # Dependências
 ```
+> **Tipo de Arquitetura:** Modular
+
+> **Comandos completos:** Veja [docs/comandos.md](docs/comandos.md)
+
+## Licença
+
+Este projeto está sob a licença especificada no arquivo [LICENSE](LICENSE).
