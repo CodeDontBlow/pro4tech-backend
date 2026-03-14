@@ -1,2 +1,73 @@
-# pro4tech-backend
-Repositório destinado ao server-backend do projeto &lt;Pro4Tech>, mantido e atualizado pela equipe Code Don't Blow
+# Pro4Tech Backend
+
+Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitetura modular, Prisma ORM para gerenciamento de banco de dados e Docker para containerização.
+
+## Tecnologias Utilizadas
+
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+## Pré-requisitos
+- **[Docker](https://www.docker.com/)** - Para containerização
+- **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
+- **[Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)** - Extensão do VS Code
+
+## Como Rodar
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/seu-usuario/pro4tech-backend.git
+cd pro4tech-backend
+```
+
+### 2. Configure as variáveis de ambiente
+
+Crie o arquivo `.env` baseado no `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+> Edite o arquivo `.env` com suas configurações.
+
+### 3. Inicie o Dev Container
+
+No VS Code, procure na barra de pesquisa por:
+
+```
+Dev Containers: Rebuild and Reopen in Container
+```
+
+## Estrutura do Projeto
+
+```
+pro4tech-backend/
+│
+├── 📂 .devcontainer/       # Configuração Dev Containers
+├── 📂 docs/                # Documentação
+│   └── comandos.md         # Comandos e guias detalhados
+│
+├── 📂 prisma/              # Prisma ORM
+│   └── schema.prisma       # Schema do banco de dados
+│
+├── 📂 src/                 # Código fonte
+│   ├── main.ts             # Entry point
+│   ├── app.module.ts       # Módulo raiz
+│   └── 📂 prisma/          # Módulo Prisma
+│
+├── 📂 test/                # Testes E2E
+├── 📄 docker-compose.yml   # Orquestração de containers
+├── 📄 Dockerfile           # Imagem Docker
+└── 📄 package.json         # Dependências
+```
+> **Tipo de Arquitetura:** Modular
+
+> **Comandos completos:** Veja [docs/comandos.md](docs/comandos.md)
+
+## Licença
+
+Este projeto está sob a licença especificada no arquivo [LICENSE](LICENSE).
