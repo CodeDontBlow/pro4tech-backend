@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   backend:
     build:
@@ -12,8 +11,8 @@ services:
     environment:
       - NODE_ENV=development
     volumes:
-      - .:/app # código local
-      - node_modules_cache:/app/node_modules # volume NOMEADO
+      - .:/app                                    
+      - node_modules_cache:/app/node_modules      
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,7 +41,7 @@ services:
 volumes:
   postgres_data:
     name: pro4tech_postgres_data
-  node_modules_cache: # ← ADICIONAR ESTE VOLUME NOMEADO
+  node_modules_cache:          
     name: pro4tech_node_modules
 
 networks:
