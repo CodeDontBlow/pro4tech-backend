@@ -1,4 +1,5 @@
-### Comandos Docker
+## Comandos Local
+### Docker
 
 ```bash
 
@@ -33,6 +34,7 @@ docker logs -f pro4tech_backend
 docker logs --tail 10 pro4tech_backend
 ```
 
+## Visual Studio Code
 ### Comandos do .devcontainer
 
 ```bash
@@ -40,6 +42,8 @@ docker logs --tail 10 pro4tech_backend
 Dev Containers: Rebuild and Reopen in Container
 ```
 
+
+## /App Container Backend
 ### Comandos Prisma
 
 ```bash

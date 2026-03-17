@@ -22,7 +22,11 @@ Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitet
 ```bash
 git clone https://github.com/seu-usuario/pro4tech-backend.git
 cd pro4tech-backend
+
+git checkout -b develop origin/develop
+git checkout develop
 ```
+> Lembrar git fetch; git pull;
 
 ### 2. Configure as variáveis de ambiente
 
@@ -42,7 +46,12 @@ No VS Code, procure na barra de pesquisa por:
 Dev Containers: Rebuild and Reopen in Container
 ```
 
-### 4. Verifique se a aplicação está funcionando
+### 4. Gerar Prisma Client
+```bash
+npx prisma generate
+```
+
+### 5. Verifique se a aplicação está funcionando
 
 Você pode acompanhar os logs do container de duas formas:
 
