@@ -1,8 +1,178 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+    provider = "prisma-client"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
+}
+
+enum Role {
+    CLIENT
+    AGENT
+    ADMIN
+}
+
+enum ChatStatus {
+    OFFLINE
+    ONLINE
+    BUSY
+    AWAY
+}
+
+enum TicketStatus {
+    TRIAGE
+    OPENED
+    ESCALATED
+    CLOSED
+    RESOLVED
+}
+
+enum TicketPriority {
+    LOW
+    MEDIUM
+    HIGH
+    HIGHEST
+}
+
+enum TicketAction {
+    SCALATION
+    DEVOLUTION
+}
+
+
+
+
+
+model User {
+    usr_id              Int             @id @default(autoincrement())
+    usr_company         Int
+    usr_phone           String?         @unique
+    usr_email           String          @unique    
+    usr_hashedPassword  String
+    usr_name            String
+    usr_role            Role            @default(CLIENT)
+    usr_chatStatus      ChatStatus      @default(OFFLINE)
+    usr_lastSeen        DateTime?
+    usr_isActive        Boolean         @default(true)
+    usr_resetToken      String?
+    usr_resetTknExpires DateTime?
+    usr_createdAt       DateTime        @default(now())
+    usr_updatedAt       DateTime        @updatedAt
+    usr_deletedAt       DateTime?
+    usr_lastLogin       DateTime?
+
+    company             Company         @relation(fields: [usr_company], references: [com_id])
+    tickets             Ticket[]
+}
+
+model Company {
+    com_id              Int             @id @default(autoincrement())
+    com_cnpj            String          @unique
+    com_name            String   
+    com_contactName     String?
+    com_contactEmail    String?         @unique
+    com_accessCode      String          @unique
+    com_isActive        Boolean         @default(true)
+    com_updatedAt       DateTime        @updatedAt
+    com_deletedAt       DateTime?
+
+    users               User[]
+    tickets             Ticket[]
+}
+
+model Agent {
+    agt_id              Int             @id
+    agt_supportLevel    String
+    agt_canAnswer       Boolean
+
+    user                User            @relation(fields: [agt_id], references: [usr_id])
+    agentGroups         AgentGroup[]
+    tickets             Ticket[]
+    historyFrom         TicketHistory[] @relation("FromAgent")
+    historyTo           TicketHistory[] @relation("ToAgent")
+}
+
+model SupportGroup {
+    spg_id              Int             @id @default(autoincrement())
+    spg_name            String
+    spg_description     String
+    spg_isActive        Boolean         @default(true)
+    spg_createdAt       DateTime        @default(now())
+    spg_updatedAt       DateTime        @updatedAt
+    spg_deletedAt       DateTime?
+
+    agentGroups         AgentGroup[]
+    tickets             Ticket[]
+    historyFrom         TicketHistory[] @relation("FromGroup")
+    historyTo           TicketHistory[] @relation("ToGroup")
+}
+
+model AgentGroup {
+    agg_agent           Int
+    agg_supportGroup    Int
+    @@id([agg_agent, agg_supportGroup])
+    agg_assignedAt      DateTime        @default(now())
+
+    agent               Agent           @relation(fields: [agg_agent], references: [agt_id])
+    supportGroup        SupportGroup    @relation(fields: [agg_supportGroup], references: [spg_id])
+}
+
+
+
+
+
+model Ticket {
+    tkt_id              Int             @id @default(autoincrement())
+    tkt_company         Company
+    tkt_client          User
+    tkt_agent           Agent?
+    tkt_supportGroup    SupportGroup?
+    tkt_subject         TicketSubject?
+    tkt_status          TicketStatus    @default(TRIAGE)
+    tkt_priority        TicketPriority? @default(MEDIUM)
+    tkt_ratingScore     Int?
+    tkt_ratingComment   String?
+    tkt_createdAt       DateTime        @default(now())
+    tkt_updatedAt       DateTime        @updatedAt
+    tkt_closeddAt       DateTime?
+    
+    client              User            @relation(fields: [tkt_client], references: [usr_id])
+    company             Company         @relation(fields: [tkt_company], references: [com_id])
+    agent               Agent           @relation(fields: [tkt_agent], references: [agt_id])
+    supportGroup        SupportGroup    @relation(fields: [tkt_supportGroup], references: [spg_id])
+}
+
+model TicketHistory {
+    tkh_id              Int             @id @default(autoincrement())
+    tkh_fromStatus      TicketStatus?
+    tkh_toStatus        TicketStatus?
+    tkh_fromGroup       SupportGroup?
+    tkh_toGroup         SupportGroup?
+    tkh_fromAgent       Agent?
+    tkh_toAgent         Agent?
+    tkh_actionType      TicketAction
+    tkh_createdAt       DateTime        @default(now())
+
+    fromSupportGroup    SupportGroup    @relation("FromGroup", fields: [tkh_fromGroup], references: [spg_id])
+    toSupportGroup      SupportGroup    @relation("ToGroup", fields: [tkh_toGroup], references: [spg_id])
+    fromAgent           Agent           @relation("FromAgent", fields: [tkh_fromAgent], references: [agt_id])       
+    toAgent             Agent           @relation("ToAgent", fields: [tkh_toAgent], references: [agt_id])       
+}
+
+model TicketSubject {
+    tks_id              Int             @id @default(autoincrement())
+    tks_name            String
+    tks_description     String
+    tks_isActive        Boolean
+    tks_createdAt       DateTime        @default(now())
+    tks_updatedAt       DateTime        @updatedAt    
+}
+
+model TriageRule {
+    nod_id              Int             @id @default(autoincrement())
+    nod_parentId        TriageRule
+    nod_question        String
+    nod_answerTrigger   String
+    nod_isLeaf          Boolean
 }
