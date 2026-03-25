@@ -36,8 +36,8 @@ enum TicketPriority {
 }
 
 enum TicketAction {
-    SCALATION
-    DEVOLUTION
+    ESCALATION
+    RETURN
 }
 
 
@@ -63,7 +63,8 @@ model User {
     usr_lastLogin       DateTime?
 
     company             Company         @relation(fields: [usr_company], references: [com_id])
-    tickets             Ticket[]
+    tickets             Ticket[]        @relation("ClientTicket")
+    agent               Agent?
 }
 
 model Company {
@@ -88,7 +89,7 @@ model Agent {
 
     user                User            @relation(fields: [agt_id], references: [usr_id])
     agentGroups         AgentGroup[]
-    tickets             Ticket[]
+    tickets             Ticket[]        @relation("AgentTicket")
     historyFrom         TicketHistory[] @relation("FromAgent")
     historyTo           TicketHistory[] @relation("ToAgent")
 }
@@ -106,6 +107,7 @@ model SupportGroup {
     tickets             Ticket[]
     historyFrom         TicketHistory[] @relation("FromGroup")
     historyTo           TicketHistory[] @relation("ToGroup")
+    triageRules         TriageRule[]
 }
 
 model AgentGroup {
@@ -124,40 +126,41 @@ model AgentGroup {
 
 model Ticket {
     tkt_id              Int             @id @default(autoincrement())
-    tkt_company         Company
-    tkt_client          User
-    tkt_agent           Agent?
-    tkt_supportGroup    SupportGroup?
-    tkt_subject         TicketSubject?
+    tkt_companyId       Int
+    tkt_clientId        Int
+    tkt_agentId         Int?
+    tkt_supportGroupId  Int?
+    tkt_subjectId       Int?
     tkt_status          TicketStatus    @default(TRIAGE)
     tkt_priority        TicketPriority? @default(MEDIUM)
     tkt_ratingScore     Int?
     tkt_ratingComment   String?
     tkt_createdAt       DateTime        @default(now())
     tkt_updatedAt       DateTime        @updatedAt
-    tkt_closeddAt       DateTime?
+    tkt_closedAt        DateTime?
     
-    client              User            @relation(fields: [tkt_client], references: [usr_id])
-    company             Company         @relation(fields: [tkt_company], references: [com_id])
-    agent               Agent           @relation(fields: [tkt_agent], references: [agt_id])
-    supportGroup        SupportGroup    @relation(fields: [tkt_supportGroup], references: [spg_id])
+    client              User            @relation("ClientTicket", fields: [tkt_clientId], references: [usr_id])
+    agent               Agent?          @relation("AgentTicket", fields: [tkt_agentId], references: [agt_id])
+    company             Company         @relation(fields: [tkt_companyId], references: [com_id])
+    supportGroup        SupportGroup?   @relation(fields: [tkt_supportGroupId], references: [spg_id])
+    subject             TicketSubject?  @relation(fields: [tkt_subjectId], references: [tks_id])   
 }
 
 model TicketHistory {
     tkh_id              Int             @id @default(autoincrement())
     tkh_fromStatus      TicketStatus?
     tkh_toStatus        TicketStatus?
-    tkh_fromGroup       SupportGroup?
-    tkh_toGroup         SupportGroup?
-    tkh_fromAgent       Agent?
-    tkh_toAgent         Agent?
+    tkh_fromGroupId     Int?
+    tkh_toGroupId       Int?
+    tkh_fromAgentId     Int?
+    tkh_toAgentId       Int?
     tkh_actionType      TicketAction
     tkh_createdAt       DateTime        @default(now())
 
-    fromSupportGroup    SupportGroup    @relation("FromGroup", fields: [tkh_fromGroup], references: [spg_id])
-    toSupportGroup      SupportGroup    @relation("ToGroup", fields: [tkh_toGroup], references: [spg_id])
-    fromAgent           Agent           @relation("FromAgent", fields: [tkh_fromAgent], references: [agt_id])       
-    toAgent             Agent           @relation("ToAgent", fields: [tkh_toAgent], references: [agt_id])       
+    fromSupportGroup    SupportGroup?   @relation("FromGroup", fields: [tkh_fromGroupId], references: [spg_id])
+    toSupportGroup      SupportGroup?   @relation("ToGroup", fields: [tkh_toGroupId], references: [spg_id])
+    fromAgent           Agent?          @relation("FromAgent", fields: [tkh_fromAgentId], references: [agt_id])       
+    toAgent             Agent?          @relation("ToAgent", fields: [tkh_toAgentId], references: [agt_id])       
 }
 
 model TicketSubject {
@@ -167,12 +170,19 @@ model TicketSubject {
     tks_isActive        Boolean
     tks_createdAt       DateTime        @default(now())
     tks_updatedAt       DateTime        @updatedAt    
+
+    tickets             Ticket[]
 }
 
 model TriageRule {
     nod_id              Int             @id @default(autoincrement())
-    nod_parentId        TriageRule
-    nod_question        String
-    nod_answerTrigger   String
-    nod_isLeaf          Boolean
+    nod_parentId        Int?  
+    nod_question        String?
+    nod_answerTrigger   String?
+    nod_isLeaf          Boolean         @default(false)
+    nod_targetGroupId   Int?   
+
+    parent              TriageRule?     @relation("TriageNode", fields: [nod_parentId], references: [nod_id])
+    children            TriageRule[]    @relation("TriageNode")
+    supportGroup        SupportGroup?   @relation(fields: [nod_targetGroupId], references: [spg_id])
 }
