@@ -45,8 +45,8 @@ enum TicketAction {
 
 
 model User {
-    usr_id              Int             @id @default(autoincrement())
-    usr_company         Int
+    usr_id              String          @id @default(uuid())
+    usr_companyId       String
     usr_phone           String?         @unique
     usr_email           String          @unique    
     usr_hashedPassword  String
@@ -62,13 +62,13 @@ model User {
     usr_deletedAt       DateTime?
     usr_lastLogin       DateTime?
 
-    company             Company         @relation(fields: [usr_company], references: [com_id])
+    company             Company         @relation(fields: [usr_companyId], references: [com_id])
     tickets             Ticket[]        @relation("ClientTicket")
     agent               Agent?
 }
 
 model Company {
-    com_id              Int             @id @default(autoincrement())
+    com_id              String          @id @default(uuid())
     com_cnpj            String          @unique
     com_name            String   
     com_contactName     String?
@@ -83,7 +83,7 @@ model Company {
 }
 
 model Agent {
-    agt_id              Int             @id
+    agt_id              String          @id
     agt_supportLevel    String
     agt_canAnswer       Boolean
 
@@ -95,7 +95,7 @@ model Agent {
 }
 
 model SupportGroup {
-    spg_id              Int             @id @default(autoincrement())
+    spg_id              String          @id @default(uuid())
     spg_name            String
     spg_description     String
     spg_isActive        Boolean         @default(true)
@@ -111,13 +111,13 @@ model SupportGroup {
 }
 
 model AgentGroup {
-    agg_agent           Int
-    agg_supportGroup    Int
-    @@id([agg_agent, agg_supportGroup])
+    agg_agentId         String
+    agg_supportGroupId  String
+    @@id([agg_agentId, agg_supportGroupId])
     agg_assignedAt      DateTime        @default(now())
 
-    agent               Agent           @relation(fields: [agg_agent], references: [agt_id])
-    supportGroup        SupportGroup    @relation(fields: [agg_supportGroup], references: [spg_id])
+    agent               Agent           @relation(fields: [agg_agentId], references: [agt_id])
+    supportGroup        SupportGroup    @relation(fields: [agg_supportGroupId], references: [spg_id])
 }
 
 
@@ -125,14 +125,14 @@ model AgentGroup {
 
 
 model Ticket {
-    tkt_id              Int             @id @default(autoincrement())
-    tkt_companyId       Int
-    tkt_clientId        Int
-    tkt_agentId         Int?
-    tkt_supportGroupId  Int?
-    tkt_subjectId       Int?
+    tkt_id              String          @id @default(uuid())
+    tkt_companyId       String
+    tkt_clientId        String
+    tkt_agentId         String?
+    tkt_supportGroupId  String?
+    tkt_subjectId       String?
     tkt_status          TicketStatus    @default(TRIAGE)
-    tkt_priority        TicketPriority? @default(MEDIUM)
+    tkt_priority        TicketPriority?
     tkt_ratingScore     Int?
     tkt_ratingComment   String?
     tkt_createdAt       DateTime        @default(now())
@@ -144,19 +144,22 @@ model Ticket {
     company             Company         @relation(fields: [tkt_companyId], references: [com_id])
     supportGroup        SupportGroup?   @relation(fields: [tkt_supportGroupId], references: [spg_id])
     subject             TicketSubject?  @relation(fields: [tkt_subjectId], references: [tks_id])   
+    ticketHistories TicketHistory[]
 }
 
 model TicketHistory {
-    tkh_id              Int             @id @default(autoincrement())
+    tkh_id              String          @id @default(uuid())
+    tkh_ticketId        String
     tkh_fromStatus      TicketStatus?
     tkh_toStatus        TicketStatus?
-    tkh_fromGroupId     Int?
-    tkh_toGroupId       Int?
-    tkh_fromAgentId     Int?
-    tkh_toAgentId       Int?
+    tkh_fromGroupId     String?
+    tkh_toGroupId       String?
+    tkh_fromAgentId     String?
+    tkh_toAgentId       String?
     tkh_actionType      TicketAction
     tkh_createdAt       DateTime        @default(now())
 
+    ticketHistory       Ticket          @relation(fields: [tkh_ticketId], references: [tkt_id])
     fromSupportGroup    SupportGroup?   @relation("FromGroup", fields: [tkh_fromGroupId], references: [spg_id])
     toSupportGroup      SupportGroup?   @relation("ToGroup", fields: [tkh_toGroupId], references: [spg_id])
     fromAgent           Agent?          @relation("FromAgent", fields: [tkh_fromAgentId], references: [agt_id])       
@@ -164,7 +167,7 @@ model TicketHistory {
 }
 
 model TicketSubject {
-    tks_id              Int             @id @default(autoincrement())
+    tks_id              String          @id @default(uuid())
     tks_name            String
     tks_description     String
     tks_isActive        Boolean
@@ -175,12 +178,12 @@ model TicketSubject {
 }
 
 model TriageRule {
-    nod_id              Int             @id @default(autoincrement())
-    nod_parentId        Int?  
+    nod_id              String          @id @default(uuid())
+    nod_parentId        String?  
     nod_question        String?
     nod_answerTrigger   String?
     nod_isLeaf          Boolean         @default(false)
-    nod_targetGroupId   Int?   
+    nod_targetGroupId   String?   
 
     parent              TriageRule?     @relation("TriageNode", fields: [nod_parentId], references: [nod_id])
     children            TriageRule[]    @relation("TriageNode")
