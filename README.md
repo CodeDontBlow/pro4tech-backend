@@ -11,8 +11,14 @@ Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitet
 [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## Pré-requisitos
-- **[Docker](https://www.docker.com/)** - Para containerização
 - **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
+
+### Local
+- **[Node](https://nodejs.org/en)**
+- **[Postgresql](https://www.postgresql.org)**
+
+### Docker
+- **[Docker](https://www.docker.com/)** - Para containerização
 - **[Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)** - Extensão do VS Code
 
 ## Como Rodar
@@ -38,6 +44,14 @@ cp .env.example .env
 
 > Edite o arquivo `.env` com suas configurações.
 
+
+### Local
+```bash
+npm run start:dev #iniciar servidor dev
+```
+
+
+### Docker
 ### 3. Inicie o Dev Container
 
 No VS Code, procure na barra de pesquisa por:

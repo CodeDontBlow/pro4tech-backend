@@ -1,22 +1,22 @@
-FROM node:20-alpine
+# FROM node:20-alpine
 
-WORKDIR /app
+# WORKDIR /app
 
-RUN apk add --no-cache python3 make g++
+# RUN apk add --no-cache python3 make g++
 
-# Copia dependências primeiro (cache)
-COPY package*.json ./
+# # Copia dependências primeiro (cache)
+# COPY package*.json ./
 
-# Instala dependências
-RUN npm install
+# # Instala dependências
+# RUN npm install
 
-# Copia código
-COPY . .
+# # Copia código
+# COPY . .
 
-# Build (opcional para dev, necessário para prod)
-# RUN npm run build
+# # Build (opcional para dev, necessário para prod)
+# # RUN npm run build
 
-EXPOSE 3333
+# EXPOSE 3333
 
-# Dev com hot-reload
-CMD ["npm", "run", "start:dev"]
+# # Dev com hot-reload
+# CMD ["npm", "run", "start:dev"]
