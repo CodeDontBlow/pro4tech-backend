@@ -8,8 +8,6 @@ Exemplos:
 - Correção do escalonamento entre grupos de atendimento
 - Refatoração da lógica de triagem automatizada -->
 
-
-
 <!-- ## #️⃣ Issues relacionadas (opcional)
 
 Vincule tarefas do Jira ou issues do GitHub:
@@ -36,15 +34,13 @@ Descreva a causa técnica raiz.
 - regras adicionadas
 - refatorações feitas -->
 
-
-
-## 🧪 Como testar 
+## 🧪 Como testar
 
 <!-- Passo a passo claro para o revisor validar: -->
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ---
 

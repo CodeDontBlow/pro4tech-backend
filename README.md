@@ -11,8 +11,9 @@ Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitet
 [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## Pré-requisitos
+
 - **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
-- **[Node](https://nodejs.org/en)** 
+- **[Node](https://nodejs.org/en)**
 - **[Postgresql](https://www.postgresql.org)**
 - **[Docker](https://www.docker.com/)** - ( Opcional para db)
 
@@ -23,36 +24,40 @@ Você pode rodar o backend de duas formas principais:
 ### Opção 1: PostgreSQL via Docker + Backend Local
 
 1. **Clone o repositório**
-	```bash
-	git clone https://github.com/seu-usuario/pro4tech-backend.git
-	cd pro4tech-backend
-	git checkout -b develop origin/develop
-	git checkout develop
-	# Lembre-se de executar: git fetch; git pull;
-	```
+
+   ```bash
+   git clone https://github.com/seu-usuario/pro4tech-backend.git
+   cd pro4tech-backend
+   git checkout -b develop origin/develop
+   git checkout develop
+   # Lembre-se de executar: git fetch; git pull;
+   ```
 
 2. **Configure as variáveis de ambiente**
-	```bash
-	cp .env.example .env
-	# Edite o arquivo .env conforme necessário
-	```
+
+   ```bash
+   cp .env.example .env
+   # Edite o arquivo .env conforme necessário
+   ```
 
 3. **Suba o banco de dados PostgreSQL via Docker**
-	```bash
-	docker-compose up -d
-	# Isso irá iniciar apenas o banco de dados PostgreSQL
-	```
+
+   ```bash
+   docker-compose up -d
+   # Isso irá iniciar apenas o banco de dados PostgreSQL
+   ```
 
 4. **Gere o Prisma Client**
-	```bash
-	npx prisma generate
-	```
+
+   ```bash
+   npx prisma generate
+   ```
 
 5. **Inicie o backend localmente**
-	```bash
-	npm install
-	npm run start:dev
-	```
+   ```bash
+   npm install
+   npm run start:dev
+   ```
 
 ---
 
@@ -63,18 +68,19 @@ Você pode rodar o backend de duas formas principais:
 2. **Configure as variáveis de ambiente** (mesmo passo da Opção 1)
 
 3. **Certifique-se que o PostgreSQL está rodando localmente**
-	- Configure o acesso ao banco no `.env` conforme seu ambiente local.
+   - Configure o acesso ao banco no `.env` conforme seu ambiente local.
 
 4. **Gere o Prisma Client**
-	```bash
-	npx prisma generate
-	```
+
+   ```bash
+   npx prisma generate
+   ```
 
 5. **Inicie o backend localmente**
-	```bash
-	npm install
-	npm run start:dev
-	```
+   ```bash
+   npm install
+   npm run start:dev
+   ```
 
 ## Estrutura do Projeto
 
@@ -98,6 +104,7 @@ pro4tech-backend/
 ├── 📄 Dockerfile           # Imagem Docker
 └── 📄 package.json         # Dependências
 ```
+
 > **Tipo de Arquitetura:** Modular
 
 > **Comandos completos:** Veja [docs/comandos.md](docs/comandos.md)
