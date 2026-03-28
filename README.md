@@ -12,75 +12,69 @@ Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitet
 
 ## Pré-requisitos
 - **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
-
-### Local
-- **[Node](https://nodejs.org/en)**
+- **[Node](https://nodejs.org/en)** 
 - **[Postgresql](https://www.postgresql.org)**
-
-### Docker
-- **[Docker](https://www.docker.com/)** - Para containerização
-- **[Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)** - Extensão do VS Code
+- **[Docker](https://www.docker.com/)** - ( Opcional para db)
 
 ## Como Rodar
 
-### 1. Clone o repositório
+Você pode rodar o backend de duas formas principais:
 
-```bash
-git clone https://github.com/seu-usuario/pro4tech-backend.git
-cd pro4tech-backend
+### Opção 1: PostgreSQL via Docker + Backend Local
 
-git checkout -b develop origin/develop
-git checkout develop
-```
-> Lembrar git fetch; git pull;
+1. **Clone o repositório**
+	```bash
+	git clone https://github.com/seu-usuario/pro4tech-backend.git
+	cd pro4tech-backend
+	git checkout -b develop origin/develop
+	git checkout develop
+	# Lembre-se de executar: git fetch; git pull;
+	```
 
-### 2. Configure as variáveis de ambiente
+2. **Configure as variáveis de ambiente**
+	```bash
+	cp .env.example .env
+	# Edite o arquivo .env conforme necessário
+	```
 
-Crie o arquivo `.env` baseado no `.env.example`:
+3. **Suba o banco de dados PostgreSQL via Docker**
+	```bash
+	docker-compose up -d
+	# Isso irá iniciar apenas o banco de dados PostgreSQL
+	```
 
-```bash
-cp .env.example .env
-```
+4. **Gere o Prisma Client**
+	```bash
+	npx prisma generate
+	```
 
-> Edite o arquivo `.env` com suas configurações.
+5. **Inicie o backend localmente**
+	```bash
+	npm install
+	npm run start:dev
+	```
 
+---
 
-### Local
-```bash
-npm run start:dev #iniciar servidor dev
-```
+### Opção 2: PostgreSQL Local + Backend Local
 
+1. **Clone o repositório** (mesmo passo da Opção 1)
 
-### Docker
-### 3. Inicie o Dev Container
+2. **Configure as variáveis de ambiente** (mesmo passo da Opção 1)
 
-No VS Code, procure na barra de pesquisa por:
+3. **Certifique-se que o PostgreSQL está rodando localmente**
+	- Configure o acesso ao banco no `.env` conforme seu ambiente local.
 
-```
-Dev Containers: Rebuild and Reopen in Container
-```
+4. **Gere o Prisma Client**
+	```bash
+	npx prisma generate
+	```
 
-### 4. Gerar Prisma Client
-```bash
-npx prisma generate
-```
-
-### 5. Verifique se a aplicação está funcionando
-
-Você pode acompanhar os logs do container de duas formas:
-
-#### Opção 1 — Via Docker CLI (Terminal)
-
-```bash
-docker logs -f pro4tech_backend
-```
-
-#### Opção 2 — Via Docker Desktop (Interface gráfica)
-- Abra o Docker Desktop
-- Vá em Containers
-- Clique no container pro4tech_backend
-- Abra a aba Logs para visualizar os logs em tempo real
-
+5. **Inicie o backend localmente**
+	```bash
+	npm install
+	npm run start:dev
+	```
 
 ## Estrutura do Projeto
 
