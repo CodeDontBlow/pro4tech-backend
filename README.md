@@ -15,7 +15,7 @@ Backend API desenvolvido com NestJS para o projeto Pro4Tech, utilizando arquitet
 - **[Visual Studio Code](https://code.visualstudio.com/)** - Editor de código
 - **[Node](https://nodejs.org/en)**
 - **[Postgresql](https://www.postgresql.org)**
-- **[Docker](https://www.docker.com/)** - ( Opcional para db)
+- **[Docker](https://www.docker.com/)** - ( Opcional )
 
 ## Como Rodar
 
@@ -30,13 +30,13 @@ Você pode rodar o backend de duas formas principais:
    cd pro4tech-backend
    git checkout -b develop origin/develop
    git checkout develop
-   # Lembre-se de executar: git fetch; git pull;
    ```
 
 2. **Configure as variáveis de ambiente**
 
    ```bash
    cp .env.example .env
+   DATABASE_URL="postgresql://seu_usuario:sua_senha@localhost:5432/seu_banco_de_dados?schema=public"
    # Edite o arquivo .env conforme necessário
    ```
 
@@ -45,42 +45,38 @@ Você pode rodar o backend de duas formas principais:
    ```bash
    docker-compose up -d
    # Isso irá iniciar apenas o banco de dados PostgreSQL
+
+   #docker-compose down para finalizar
    ```
 
-4. **Gere o Prisma Client**
-
-   ```bash
-   npx prisma generate
-   ```
-
-5. **Inicie o backend localmente**
+4. **Inicie o backend localmente**
    ```bash
    npm install
+   npx prisma generate
+   npx prisma migrate deploy
    npm run start:dev
    ```
+
+5. **Acessar as Rotas**: http://localhost:3333/api
 
 ---
 
 ### Opção 2: PostgreSQL Local + Backend Local
 
-1. **Clone o repositório** (mesmo passo da Opção 1)
-
-2. **Configure as variáveis de ambiente** (mesmo passo da Opção 1)
+Repita os passos 1 e 2 da Opção 1 para clonar o repositório e configurar as variáveis de ambiente.
 
 3. **Certifique-se que o PostgreSQL está rodando localmente**
    - Configure o acesso ao banco no `.env` conforme seu ambiente local.
 
-4. **Gere o Prisma Client**
+4. **Gere o Prisma Client e inicie o backend**
 
-   ```bash
-   npx prisma generate
-   ```
-
-5. **Inicie o backend localmente**
    ```bash
    npm install
+   npx prisma generate
+   npx prisma migrate deploy
    npm run start:dev
    ```
+5. **Acessar as Rotas**: http://localhost:3333/api
 
 ## Estrutura do Projeto
 

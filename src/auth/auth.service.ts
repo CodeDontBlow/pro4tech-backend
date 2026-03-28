@@ -21,10 +21,7 @@ export class AuthService {
       throw new UnauthorizedException('Account is disabled');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.hashedPassword,
-    );
+    const isPasswordValid = await bcrypt.compare(password, user.hashedPassword);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

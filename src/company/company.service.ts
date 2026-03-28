@@ -62,7 +62,6 @@ export class CompanyService {
         },
       });
 
-
       const admin = await tx.user.create({
         data: {
           companyId: company.id,
@@ -116,20 +115,25 @@ export class CompanyService {
     await this.validateContactEmailNotInUse(companyDto.contactEmail);
   }
 
-  private async validateContactEmailNotInUse(contactEmail: string, companyIdToIgnore?: string) {
+  private async validateContactEmailNotInUse(
+    contactEmail: string,
+    companyIdToIgnore?: string,
+  ) {
     if (!contactEmail) return;
-    const existingEmail = await this.companyRepository.findByContactEmail(contactEmail);
+    const existingEmail =
+      await this.companyRepository.findByContactEmail(contactEmail);
     if (existingEmail && existingEmail.id !== companyIdToIgnore) {
       this.logger.warn(
         `Operation failed — contact email already in use: ${contactEmail}`,
       );
-      throw new ConflictException(
-        `Email ${contactEmail} already in use`,
-      );
+      throw new ConflictException(`Email ${contactEmail} already in use`);
     }
   }
 
-  async update(id: string, data: UpdateCompanyDto): Promise<ResponseCompanyDto> {
+  async update(
+    id: string,
+    data: UpdateCompanyDto,
+  ): Promise<ResponseCompanyDto> {
     await this.validateContactEmailNotInUse(data.contactEmail, id);
     return this.companyRepository.update(id, data);
   }
@@ -144,5 +148,4 @@ export class CompanyService {
     this.logger.log(`Company soft deleted — id: ${id}`);
     return deleted;
   }
-
 }

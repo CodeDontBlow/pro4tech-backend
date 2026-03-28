@@ -7,7 +7,10 @@ import { CreateCompanyWithAdminDto } from './dtos/create-company-with-admin.dto'
 //decorators
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Body, Controller, Delete, Patch, Post } from '@nestjs/common';
-import { AuthUser, UserPayload } from 'src/common/decorators/auth-user.decorator';
+import {
+  AuthUser,
+  UserPayload,
+} from 'src/common/decorators/auth-user.decorator';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 
 @Controller('company')
@@ -29,5 +32,4 @@ export class CompanyController {
   delete(@AuthUser() user: UserPayload) {
     return this.companyService.softDelete(user.companyId);
   }
-
 }

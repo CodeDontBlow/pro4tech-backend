@@ -99,10 +99,10 @@ export class UserRepository {
   async softDelete(id: string): Promise<ResponseUserDto> {
     return this.prisma.user.update({
       where: { id: id },
-      data: { 
+      data: {
         deletedAt: new Date(),
         isActive: false,
-       },
+      },
       select: userPublicSelect,
     });
   }

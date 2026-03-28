@@ -1,4 +1,9 @@
-## Comandos Local
+### Api
+
+```bash
+# Iniciar API
+npm run start:dev
+```
 
 ### Docker
 

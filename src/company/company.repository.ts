@@ -32,7 +32,7 @@ export class CompanyRepository {
     return this.prisma.company.findUnique({
       where: { cnpj: cnpj, deletedAt: null },
       select: {
-        ...companyPublicSelect, 
+        ...companyPublicSelect,
       },
     });
   }
@@ -71,5 +71,4 @@ export class CompanyRepository {
       },
     });
   }
-
 }
