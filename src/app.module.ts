@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
+import { CompaniesModule } from './companies/companies.module';
 
 // módulo PAI
 @Module({
@@ -14,6 +15,7 @@ import { AppController } from './app.controller';
     PrismaModule,
     AuthModule,
     UsersModule,
+    CompaniesModule,
   ],
   controllers: [AppController],
 })

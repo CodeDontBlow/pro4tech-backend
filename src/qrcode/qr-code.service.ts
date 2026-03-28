@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { randomBytes } from 'crypto';
 import * as QRCode from 'qrcode';
 
 export interface ReturnQr {
@@ -7,39 +8,46 @@ export interface ReturnQr {
   image: string;
 }
 
-const config: QRCode.QRCodeToDataURLOptions = {
-  errorCorrectionLevel: 'M',
-  margin: 2,
-  scale: 10,
-  color: {
-    dark: '#000000',
-    light: '#FFFFFF',
-  },
-};
-
 @Injectable()
 export class QrCodeService {
-  private readonly logger = new Logger(QrCodeService.name);
+  constructor(private readonly prisma: PrismaService) {}
 
-  async generateQr(company: string): Promise<ReturnQr> {
-    if (!company?.trim()) {
-      throw new BadRequestException('Company name is required.');
+  async generateCompanyQr(companyId: string): Promise<ReturnQr> {
+    const company = await this.prisma.company.findUnique({
+      where: { com_id: companyId },
+    });
+
+    if (!company) {
+      console.error(`Company ${companyId} not found`);
+      throw new BadRequestException('Company not found in database.');
     }
 
-    const id = this.generateId();
-    const text = `ID:${id};CMP:${company}`;
+    const accessCode = company.com_accessCode;
+
+    if (!accessCode) {
+      throw new BadRequestException('Company has no access code generated.');
+    }
 
     try {
-      const image = await QRCode.toDataURL(text, config);
-      this.logger.log(`QR Code generated - ID: ${id}, Company: ${company}`);
-      return { id, image };
-    } catch (error) {
-      this.logger.error(`Failed to generate QR for company ${company}: ${error.message}`);
-      throw new InternalServerErrorException('Generation failed.');
+      // Gera a imagem do QR code
+      const image = await QRCode.toDataURL(`ID:${companyId};CODE:${accessCode}`, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        scale: 10
+      });
+
+      return { 
+        id: accessCode, 
+        image: image 
+      };
+    } catch (err) {
+      console.error('QR Generation failed:', err);
+      throw new InternalServerErrorException('Error generating QR Code image.');
     }
   }
-
-  private generateId(): string {
-    return randomBytes(4).toString('hex').toUpperCase();
+  generateCodeString(name: string): string {
+    const prefix = name.substring(0, 3).toUpperCase().padEnd(3, 'X');
+    const suffix = randomBytes(3).toString('hex').toLowerCase();
+    return `${prefix}-${suffix}`;
   }
 }
