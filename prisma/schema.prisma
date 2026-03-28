@@ -1,8 +1,191 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+    provider = "prisma-client"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
+}
+
+enum Role {
+    CLIENT
+    AGENT
+    ADMIN
+}
+
+enum ChatStatus {
+    OFFLINE
+    ONLINE
+    BUSY
+    AWAY
+}
+
+enum TicketStatus {
+    TRIAGE
+    OPENED
+    ESCALATED
+    CLOSED
+    RESOLVED
+}
+
+enum TicketPriority {
+    LOW
+    MEDIUM
+    HIGH
+    HIGHEST
+}
+
+enum TicketAction {
+    ESCALATION
+    RETURN
+}
+
+
+
+
+
+model User {
+    usr_id              String          @id @default(uuid())
+    usr_companyId       String
+    usr_phone           String?         @unique
+    usr_email           String          @unique    
+    usr_hashedPassword  String
+    usr_name            String
+    usr_role            Role            @default(CLIENT)
+    usr_chatStatus      ChatStatus      @default(OFFLINE)
+    usr_lastSeen        DateTime?
+    usr_isActive        Boolean         @default(true)
+    usr_resetToken      String?
+    usr_resetTknExpires DateTime?
+    usr_createdAt       DateTime        @default(now())
+    usr_updatedAt       DateTime        @updatedAt
+    usr_deletedAt       DateTime?
+    usr_lastLogin       DateTime?
+
+    company             Company         @relation(fields: [usr_companyId], references: [com_id])
+    tickets             Ticket[]        @relation("ClientTicket")
+    agent               Agent?
+}
+
+model Company {
+    com_id              String          @id @default(uuid())
+    com_cnpj            String          @unique
+    com_name            String   
+    com_contactName     String?
+    com_contactEmail    String?         @unique
+    com_accessCode      String          @unique
+    com_isActive        Boolean         @default(true)
+    com_updatedAt       DateTime        @updatedAt
+    com_deletedAt       DateTime?
+
+    users               User[]
+    tickets             Ticket[]
+}
+
+model Agent {
+    agt_id              String          @id
+    agt_supportLevel    String
+    agt_canAnswer       Boolean
+
+    user                User            @relation(fields: [agt_id], references: [usr_id])
+    agentGroups         AgentGroup[]
+    tickets             Ticket[]        @relation("AgentTicket")
+    historyFrom         TicketHistory[] @relation("FromAgent")
+    historyTo           TicketHistory[] @relation("ToAgent")
+}
+
+model SupportGroup {
+    spg_id              String          @id @default(uuid())
+    spg_name            String
+    spg_description     String
+    spg_isActive        Boolean         @default(true)
+    spg_createdAt       DateTime        @default(now())
+    spg_updatedAt       DateTime        @updatedAt
+    spg_deletedAt       DateTime?
+
+    agentGroups         AgentGroup[]
+    tickets             Ticket[]
+    historyFrom         TicketHistory[] @relation("FromGroup")
+    historyTo           TicketHistory[] @relation("ToGroup")
+    triageRules         TriageRule[]
+}
+
+model AgentGroup {
+    agg_agentId         String
+    agg_supportGroupId  String
+    @@id([agg_agentId, agg_supportGroupId])
+    agg_assignedAt      DateTime        @default(now())
+
+    agent               Agent           @relation(fields: [agg_agentId], references: [agt_id])
+    supportGroup        SupportGroup    @relation(fields: [agg_supportGroupId], references: [spg_id])
+}
+
+
+
+
+
+model Ticket {
+    tkt_id              String          @id @default(uuid())
+    tkt_companyId       String
+    tkt_clientId        String
+    tkt_agentId         String?
+    tkt_supportGroupId  String?
+    tkt_subjectId       String?
+    tkt_status          TicketStatus    @default(TRIAGE)
+    tkt_priority        TicketPriority?
+    tkt_ratingScore     Int?
+    tkt_ratingComment   String?
+    tkt_createdAt       DateTime        @default(now())
+    tkt_updatedAt       DateTime        @updatedAt
+    tkt_closedAt        DateTime?
+    
+    client              User            @relation("ClientTicket", fields: [tkt_clientId], references: [usr_id])
+    agent               Agent?          @relation("AgentTicket", fields: [tkt_agentId], references: [agt_id])
+    company             Company         @relation(fields: [tkt_companyId], references: [com_id])
+    supportGroup        SupportGroup?   @relation(fields: [tkt_supportGroupId], references: [spg_id])
+    subject             TicketSubject?  @relation(fields: [tkt_subjectId], references: [tks_id])   
+    ticketHistories TicketHistory[]
+}
+
+model TicketHistory {
+    tkh_id              String          @id @default(uuid())
+    tkh_ticketId        String
+    tkh_fromStatus      TicketStatus?
+    tkh_toStatus        TicketStatus?
+    tkh_fromGroupId     String?
+    tkh_toGroupId       String?
+    tkh_fromAgentId     String?
+    tkh_toAgentId       String?
+    tkh_actionType      TicketAction
+    tkh_createdAt       DateTime        @default(now())
+
+    ticketHistory       Ticket          @relation(fields: [tkh_ticketId], references: [tkt_id])
+    fromSupportGroup    SupportGroup?   @relation("FromGroup", fields: [tkh_fromGroupId], references: [spg_id])
+    toSupportGroup      SupportGroup?   @relation("ToGroup", fields: [tkh_toGroupId], references: [spg_id])
+    fromAgent           Agent?          @relation("FromAgent", fields: [tkh_fromAgentId], references: [agt_id])       
+    toAgent             Agent?          @relation("ToAgent", fields: [tkh_toAgentId], references: [agt_id])       
+}
+
+model TicketSubject {
+    tks_id              String          @id @default(uuid())
+    tks_name            String
+    tks_description     String
+    tks_isActive        Boolean
+    tks_createdAt       DateTime        @default(now())
+    tks_updatedAt       DateTime        @updatedAt    
+
+    tickets             Ticket[]
+}
+
+model TriageRule {
+    nod_id              String          @id @default(uuid())
+    nod_parentId        String?  
+    nod_question        String?
+    nod_answerTrigger   String?
+    nod_isLeaf          Boolean         @default(false)
+    nod_targetGroupId   String?   
+
+    parent              TriageRule?     @relation("TriageNode", fields: [nod_parentId], references: [nod_id])
+    children            TriageRule[]    @relation("TriageNode")
+    supportGroup        SupportGroup?   @relation(fields: [nod_targetGroupId], references: [spg_id])
 }
