@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 //repositories
 import { UserRepository } from './user.repository';
@@ -60,7 +61,9 @@ export class UserService {
     await this.validatePhoneNotInUse(data.phone);
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const userId = uuidv7();
     const user = await this.userRepository.create({
+      id: userId,
       ...data,
       password: hashedPassword,
     });
