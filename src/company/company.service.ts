@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { v7 as uuidv7 } from 'uuid';
 
 //prisma client
 import { Role } from '../../generated/prisma/enums';
@@ -43,8 +44,11 @@ export class CompanyService {
     const hashedPassword = await bcrypt.hash(data.admin.password, 10);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const companyId = uuidv7();
+      const adminId = uuidv7();
       const company = await tx.company.create({
         data: {
+          id: companyId,
           cnpj: data.company.cnpj,
           name: data.company.name,
           contactName: data.company.contactName,
@@ -64,6 +68,7 @@ export class CompanyService {
 
       const admin = await tx.user.create({
         data: {
+          id: adminId,
           companyId: company.id,
           name: data.admin.name,
           phone: data.admin.phone,

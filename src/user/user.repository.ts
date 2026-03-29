@@ -62,9 +62,12 @@ export class UserRepository {
     });
   }
 
-  async create(data: CreateUserDto): Promise<ResponseUserDto> {
+  async create(
+    data: CreateUserDto & { id: string },
+  ): Promise<ResponseUserDto> {
     return this.prisma.user.create({
       data: {
+        id: data.id,
         companyId: data.companyId,
         phone: data.phone,
         email: data.email,
