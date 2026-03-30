@@ -1,13 +1,13 @@
-{
-  "name": "Pro4tech Dev",
-  "dockerComposeFile": "../docker-compose.yml",
-  "service": "backend",
-  "workspaceFolder": "/app",
+// {
+//   "name": "Pro4tech Dev",
+//   "dockerComposeFile": "../docker-compose.yml",
+//   "service": "backend",
+//   "workspaceFolder": "/app",
 
-  "customizations": {
-    "vscode": {
-      "extensions": ["esbenp.prettier-vscode", "Prisma.prisma"]
-    }
-  },
-  "forwardPorts": [3333, 5432]
-}
+//   "customizations": {
+//     "vscode": {
+//       "extensions": ["esbenp.prettier-vscode", "Prisma.prisma"]
+//     }
+//   },
+//   "forwardPorts": [3333, 5432]
+// }

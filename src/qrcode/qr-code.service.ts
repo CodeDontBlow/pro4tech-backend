@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import * as QRCode from 'qrcode';
 
@@ -34,7 +39,9 @@ export class QrCodeService {
       this.logger.log(`QR Code generated - ID: ${id}, Company: ${company}`);
       return { id, image };
     } catch (error) {
-      this.logger.error(`Failed to generate QR for company ${company}: ${error.message}`);
+      this.logger.error(
+        `Failed to generate QR for company ${company}: ${error.message}`,
+      );
       throw new InternalServerErrorException('Generation failed.');
     }
   }

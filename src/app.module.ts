@@ -2,10 +2,9 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { AppController } from './app.controller';
+import { UserModule } from './user/user.module';
+import { CompanyModule } from './company/company.module';
 
-// módulo PAI
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -13,8 +12,8 @@ import { AppController } from './app.controller';
     }),
     PrismaModule,
     AuthModule,
-    UsersModule,
+    CompanyModule,
+    UserModule,
   ],
-  controllers: [AppController],
 })
 export class AppModule {}

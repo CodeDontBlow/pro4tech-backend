@@ -45,79 +45,79 @@ enum TicketAction {
 
 
 model User {
-    usr_id              String          @id @default(uuid())
-    usr_companyId       String
-    usr_phone           String?         @unique
-    usr_email           String          @unique    
-    usr_hashedPassword  String
-    usr_name            String
-    usr_role            Role            @default(CLIENT)
-    usr_chatStatus      ChatStatus      @default(OFFLINE)
-    usr_lastSeen        DateTime?
-    usr_isActive        Boolean         @default(true)
-    usr_resetToken      String?
-    usr_resetTknExpires DateTime?
-    usr_createdAt       DateTime        @default(now())
-    usr_updatedAt       DateTime        @updatedAt
-    usr_deletedAt       DateTime?
-    usr_lastLogin       DateTime?
+    id              String          @id
+    companyId       String
+    phone           String?         @unique
+    email           String          @unique    
+    hashedPassword  String
+    name            String
+    role            Role            @default(CLIENT)
+    chatStatus      ChatStatus      @default(OFFLINE)
+    lastSeen        DateTime?
+    isActive        Boolean         @default(true)
+    resetToken      String?
+    resetTknExpires DateTime?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
+    lastLogin       DateTime?
 
-    company             Company         @relation(fields: [usr_companyId], references: [com_id])
-    tickets             Ticket[]        @relation("ClientTicket")
-    agent               Agent?
+    company         Company         @relation(fields: [companyId], references: [id])
+    tickets         Ticket[]        @relation("ClientTicket")
+    agent           Agent?
 }
 
 model Company {
-    com_id              String          @id @default(uuid())
-    com_cnpj            String          @unique
-    com_name            String   
-    com_contactName     String?
-    com_contactEmail    String?         @unique
-    com_accessCode      String          @unique
-    com_isActive        Boolean         @default(true)
-    com_updatedAt       DateTime        @updatedAt
-    com_deletedAt       DateTime?
+    id              String          @id
+    cnpj            String          @unique
+    name            String   
+    contactName     String?
+    contactEmail    String?         @unique
+    accessCode      String          @unique
+    isActive        Boolean         @default(true)
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
 
-    users               User[]
-    tickets             Ticket[]
+    users           User[]
+    tickets         Ticket[]
 }
 
 model Agent {
-    agt_id              String          @id
-    agt_supportLevel    String
-    agt_canAnswer       Boolean
+    id              String          @id
+    supportLevel    String
+    canAnswer       Boolean
 
-    user                User            @relation(fields: [agt_id], references: [usr_id])
-    agentGroups         AgentGroup[]
-    tickets             Ticket[]        @relation("AgentTicket")
-    historyFrom         TicketHistory[] @relation("FromAgent")
-    historyTo           TicketHistory[] @relation("ToAgent")
+    user            User            @relation(fields: [id], references: [id])
+    agentGroups     AgentGroup[]
+    tickets         Ticket[]        @relation("AgentTicket")
+    historyFrom     TicketHistory[] @relation("FromAgent")
+    historyTo       TicketHistory[] @relation("ToAgent")
 }
 
 model SupportGroup {
-    spg_id              String          @id @default(uuid())
-    spg_name            String
-    spg_description     String
-    spg_isActive        Boolean         @default(true)
-    spg_createdAt       DateTime        @default(now())
-    spg_updatedAt       DateTime        @updatedAt
-    spg_deletedAt       DateTime?
+    id              String          @id
+    name            String
+    description     String
+    isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
 
-    agentGroups         AgentGroup[]
-    tickets             Ticket[]
-    historyFrom         TicketHistory[] @relation("FromGroup")
-    historyTo           TicketHistory[] @relation("ToGroup")
-    triageRules         TriageRule[]
+    agentGroups     AgentGroup[]
+    tickets         Ticket[]
+    historyFrom     TicketHistory[] @relation("FromGroup")
+    historyTo       TicketHistory[] @relation("ToGroup")
+    triageRules     TriageRule[]
 }
 
 model AgentGroup {
-    agg_agentId         String
-    agg_supportGroupId  String
-    @@id([agg_agentId, agg_supportGroupId])
-    agg_assignedAt      DateTime        @default(now())
+    agentId         String
+    supportGroupId  String
+    @@id([agentId, supportGroupId])
+    assignedAt      DateTime        @default(now())
 
-    agent               Agent           @relation(fields: [agg_agentId], references: [agt_id])
-    supportGroup        SupportGroup    @relation(fields: [agg_supportGroupId], references: [spg_id])
+    agent           Agent           @relation(fields: [agentId], references: [id])
+    supportGroup    SupportGroup    @relation(fields: [supportGroupId], references: [id])
 }
 
 
@@ -125,67 +125,67 @@ model AgentGroup {
 
 
 model Ticket {
-    tkt_id              String          @id @default(uuid())
-    tkt_companyId       String
-    tkt_clientId        String
-    tkt_agentId         String?
-    tkt_supportGroupId  String?
-    tkt_subjectId       String?
-    tkt_status          TicketStatus    @default(TRIAGE)
-    tkt_priority        TicketPriority?
-    tkt_ratingScore     Int?
-    tkt_ratingComment   String?
-    tkt_createdAt       DateTime        @default(now())
-    tkt_updatedAt       DateTime        @updatedAt
-    tkt_closedAt        DateTime?
+    id              String          @id
+    companyId       String
+    clientId        String
+    agentId         String?
+    supportGroupId  String?
+    subjectId       String?
+    status          TicketStatus    @default(TRIAGE)
+    priority        TicketPriority?
+    ratingScore     Int?
+    ratingComment   String?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    closedAt        DateTime?
     
-    client              User            @relation("ClientTicket", fields: [tkt_clientId], references: [usr_id])
-    agent               Agent?          @relation("AgentTicket", fields: [tkt_agentId], references: [agt_id])
-    company             Company         @relation(fields: [tkt_companyId], references: [com_id])
-    supportGroup        SupportGroup?   @relation(fields: [tkt_supportGroupId], references: [spg_id])
-    subject             TicketSubject?  @relation(fields: [tkt_subjectId], references: [tks_id])   
+    client          User            @relation("ClientTicket", fields: [clientId], references: [id])
+    agent           Agent?          @relation("AgentTicket", fields: [agentId], references: [id])
+    company         Company         @relation(fields: [companyId], references: [id])
+    supportGroup    SupportGroup?   @relation(fields: [supportGroupId], references: [id])
+    subject         TicketSubject?  @relation(fields: [subjectId], references: [id])   
     ticketHistories TicketHistory[]
 }
 
 model TicketHistory {
-    tkh_id              String          @id @default(uuid())
-    tkh_ticketId        String
-    tkh_fromStatus      TicketStatus?
-    tkh_toStatus        TicketStatus?
-    tkh_fromGroupId     String?
-    tkh_toGroupId       String?
-    tkh_fromAgentId     String?
-    tkh_toAgentId       String?
-    tkh_actionType      TicketAction
-    tkh_createdAt       DateTime        @default(now())
+    id              String          @id
+    ticketId        String
+    fromStatus      TicketStatus?
+    toStatus        TicketStatus?
+    fromGroupId     String?
+    toGroupId       String?
+    fromAgentId     String?
+    toAgentId       String?
+    actionType      TicketAction
+    createdAt       DateTime        @default(now())
 
-    ticketHistory       Ticket          @relation(fields: [tkh_ticketId], references: [tkt_id])
-    fromSupportGroup    SupportGroup?   @relation("FromGroup", fields: [tkh_fromGroupId], references: [spg_id])
-    toSupportGroup      SupportGroup?   @relation("ToGroup", fields: [tkh_toGroupId], references: [spg_id])
-    fromAgent           Agent?          @relation("FromAgent", fields: [tkh_fromAgentId], references: [agt_id])       
-    toAgent             Agent?          @relation("ToAgent", fields: [tkh_toAgentId], references: [agt_id])       
+    ticketHistory   Ticket          @relation(fields: [ticketId], references: [id])
+    fromSupportGroup SupportGroup?  @relation("FromGroup", fields: [fromGroupId], references: [id])
+    toSupportGroup  SupportGroup?   @relation("ToGroup", fields: [toGroupId], references: [id])
+    fromAgent       Agent?          @relation("FromAgent", fields: [fromAgentId], references: [id])       
+    toAgent         Agent?          @relation("ToAgent", fields: [toAgentId], references: [id])       
 }
 
 model TicketSubject {
-    tks_id              String          @id @default(uuid())
-    tks_name            String
-    tks_description     String
-    tks_isActive        Boolean
-    tks_createdAt       DateTime        @default(now())
-    tks_updatedAt       DateTime        @updatedAt    
+    id              String          @id
+    name            String
+    description     String
+    isActive        Boolean
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt    
 
-    tickets             Ticket[]
+    tickets         Ticket[]
 }
 
 model TriageRule {
-    nod_id              String          @id @default(uuid())
-    nod_parentId        String?  
-    nod_question        String?
-    nod_answerTrigger   String?
-    nod_isLeaf          Boolean         @default(false)
-    nod_targetGroupId   String?   
+    id              String          @id
+    parentId        String?  
+    question        String?
+    answerTrigger   String?
+    isLeaf          Boolean         @default(false)
+    targetGroupId   String?   
 
-    parent              TriageRule?     @relation("TriageNode", fields: [nod_parentId], references: [nod_id])
-    children            TriageRule[]    @relation("TriageNode")
-    supportGroup        SupportGroup?   @relation(fields: [nod_targetGroupId], references: [spg_id])
+    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id])
+    children        TriageRule[]    @relation("TriageNode")
+    supportGroup    SupportGroup?   @relation(fields: [targetGroupId], references: [id])
 }
