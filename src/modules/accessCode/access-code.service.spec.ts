@@ -1,20 +1,20 @@
-import { QrCodeService } from './qr-code.service';
+import { AccessCodeService } from './access-code.service';
 
-describe('QrCodeService', () => {
-  let service: QrCodeService;
+describe('AccessCodeService', () => {
+  let service: AccessCodeService;
 
   beforeEach(() => {
-    service = new QrCodeService();
+    service = new AccessCodeService();
   });
 
   it('should generate an ID with exactly 8 characters', async () => {
-    const result = await service.generateQr('Test Company');
+    const result = await service.generateAccessCode('Test Company');
     expect(result.id).toHaveLength(8);
     console.log(result.image);
   });
 
   it('should return a base64 image in PNG format', async () => {
-    const result = await service.generateQr('Test Company');
+    const result = await service.generateAccessCode('Test Company');
     expect(result.image).toContain('data:image/png;base64,');
   });
 });

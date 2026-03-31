@@ -5,7 +5,7 @@ import {
   AuthUser,
   UserPayload,
 } from 'src/common/decorators/auth-user.decorator';
-import { Public } from 'src/auth/decorators/public.decorator';
+import { Public } from '@modules/auth/decorators/public.decorator';
 
 //services
 import { UserService } from './user.service';

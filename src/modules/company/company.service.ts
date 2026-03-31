@@ -3,11 +3,11 @@ import * as bcrypt from 'bcrypt';
 import { v7 as uuidv7 } from 'uuid';
 
 //prisma client
-import { Role } from '../../generated/prisma/enums';
+import { Role } from '@prisma/enums';
 
 //services
-import { PrismaService } from '../prisma/prisma.service';
-import { QrCodeService } from '../qrcode/qr-code.service';
+import { PrismaService } from '@database/prisma/prisma.service';
+import { AccessCodeService } from '@modules/accessCode/access-code.service';
 import { UserService } from '../user/user.service';
 
 //repositories
@@ -15,7 +15,7 @@ import { CompanyRepository } from './company.repository';
 
 //dtos
 import { ResponseCompanyDto } from './dtos/response-company.dto';
-import { ResponseUserDto } from 'src/user/dtos/response-user.dto';
+import { ResponseUserDto } from '@modules/user/dtos/response-user.dto';
 import { CreateCompanyWithAdminDto } from './dtos/create-company-with-admin.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
@@ -28,7 +28,7 @@ export class CompanyService {
     private readonly companyRepository: CompanyRepository,
     private readonly prisma: PrismaService,
     private readonly userService: UserService,
-    private readonly qrCodeService: QrCodeService,
+    private readonly accessCodeService: AccessCodeService,
   ) {}
 
   async createCompanyAndAdminUser(data: CreateCompanyWithAdminDto): Promise<{
@@ -40,7 +40,7 @@ export class CompanyService {
     await this.userService.validateEmailNotInUse(data.admin.email);
     await this.userService.validatePhoneNotInUse(data.admin.phone);
 
-    const qr = await this.qrCodeService.generateQr(data.company.name);
+    const accessCode = await this.accessCodeService.generateAccessCode(data.company.name);
     const hashedPassword = await bcrypt.hash(data.admin.password, 10);
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -53,7 +53,7 @@ export class CompanyService {
           name: data.company.name,
           contactName: data.company.contactName,
           contactEmail: data.company.contactEmail,
-          accessCode: qr.id,
+          accessCode: accessCode.id,
         },
         select: {
           id: true,
@@ -103,7 +103,7 @@ export class CompanyService {
     return {
       company: result.company,
       admin: result.admin,
-      qrCode: qr.image,
+      qrCode: accessCode.id,
     };
   }
 

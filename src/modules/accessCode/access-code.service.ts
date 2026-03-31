@@ -23,10 +23,10 @@ const config: QRCode.QRCodeToDataURLOptions = {
 };
 
 @Injectable()
-export class QrCodeService {
-  private readonly logger = new Logger(QrCodeService.name);
+export class AccessCodeService {
+  private readonly logger = new Logger(AccessCodeService.name);
 
-  async generateQr(company: string): Promise<ReturnQr> {
+  async generateAccessCode(company: string): Promise<ReturnQr> {
     if (!company?.trim()) {
       throw new BadRequestException('Company name is required.');
     }

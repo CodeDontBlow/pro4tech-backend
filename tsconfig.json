@@ -18,6 +18,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths":{
+      "@modules/*": ["src/modules/*"],
+      "@prisma/*": ["generated/prisma/*"],
+      "@shared/*": ["src/shared/*"],
+      "@database/*": ["src/database/*"]
+    }
   }
 }
