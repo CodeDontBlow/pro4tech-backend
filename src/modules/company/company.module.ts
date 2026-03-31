@@ -4,7 +4,7 @@ import { CompanyService } from './company.service';
 import { CompanyController } from './company.controller';
 
 //modules
-import { AccessCodeModule } from '@modules/accessCode/accessCode.module';
+import { AccessCodeModule } from '@modules/accessCode/access-code.module';
 import { UserModule } from '@modules/user/user.module';
 
 @Module({

@@ -7,7 +7,7 @@ import { Role } from '@prisma/enums';
 
 //services
 import { PrismaService } from '@database/prisma/prisma.service';
-import { AccessCodeService } from '@modules/accessCode/accessCode.service';
+import { AccessCodeService } from '@modules/accessCode/access-code.service';
 import { UserService } from '../user/user.service';
 
 //repositories

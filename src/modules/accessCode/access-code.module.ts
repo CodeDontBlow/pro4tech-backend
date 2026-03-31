@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AccessCodeService } from './accessCode.service';
+import { AccessCodeService } from './access-code.service';
 
 @Module({
   providers: [AccessCodeService],
