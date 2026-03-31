@@ -1,10 +1,10 @@
-import { QrCodeService } from './qr-code.service';
+import { AccessCodeService } from './accessCode.service';
 
-describe('QrCodeService', () => {
-  let service: QrCodeService;
+describe('AccessCodeService', () => {
+  let service: AccessCodeService;
 
   beforeEach(() => {
-    service = new QrCodeService();
+    service = new AccessCodeService();
   });
 
   it('should generate an ID with exactly 8 characters', async () => {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 //services
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@database/prisma/prisma.service';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 
 const companyPublicSelect = {
