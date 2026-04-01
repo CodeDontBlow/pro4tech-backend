@@ -266,4 +266,92 @@ describe('TriageRule and TicketSubject E2E', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('React Flow Format API', () => {
+    it('GET /triage-rules/react-flow should return nodes and edges', async () => {
+      const response = await request(app.getHttpServer()).get('/triage-rules/react-flow');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('nodes');
+      expect(response.body).toHaveProperty('edges');
+      expect(Array.isArray(response.body.nodes)).toBe(true);
+      expect(Array.isArray(response.body.edges)).toBe(true);
+    });
+
+    it('nodes should have correct React Flow structure', async () => {
+      const response = await request(app.getHttpServer()).get('/triage-rules/react-flow');
+
+      expect(response.status).toBe(200);
+
+      const { nodes } = response.body;
+      if (nodes.length > 0) {
+        const node = nodes[0];
+
+        // Check React Flow node structure
+        expect(node).toHaveProperty('id');
+        expect(node).toHaveProperty('data');
+        expect(node).toHaveProperty('type');
+
+        // Check node data structure
+        const { data } = node;
+        expect(data).toHaveProperty('id');
+        expect(data).toHaveProperty('label');
+        expect(data).toHaveProperty('isLeaf');
+        expect(data).toHaveProperty('nodeType');
+        expect(['root', 'question', 'leaf']).toContain(data.nodeType);
+      }
+    });
+
+    it('edges should connect nodes correctly', async () => {
+      const response = await request(app.getHttpServer()).get('/triage-rules/react-flow');
+
+      expect(response.status).toBe(200);
+
+      const { nodes, edges } = response.body;
+
+      // Each edge should reference existing nodes
+      edges.forEach((edge) => {
+        expect(edge).toHaveProperty('id');
+        expect(edge).toHaveProperty('source');
+        expect(edge).toHaveProperty('target');
+
+        const sourceNode = nodes.find((n) => n.id === edge.source);
+        const targetNode = nodes.find((n) => n.id === edge.target);
+
+        expect(sourceNode).toBeDefined();
+        expect(targetNode).toBeDefined();
+      });
+    });
+
+    it('root nodes should have parentId undefined', async () => {
+      const response = await request(app.getHttpServer()).get('/triage-rules/react-flow');
+
+      expect(response.status).toBe(200);
+
+      const { nodes } = response.body;
+      const rootNodes = nodes.filter((n) => n.data.nodeType === 'root');
+
+      rootNodes.forEach((node) => {
+        expect(node.data.parentId).toBeUndefined();
+      });
+    });
+
+    it('leaf nodes should have subject data if linked', async () => {
+      const response = await request(app.getHttpServer()).get('/triage-rules/react-flow');
+
+      expect(response.status).toBe(200);
+
+      const { nodes } = response.body;
+      const leafNodes = nodes.filter((n) => n.data.nodeType === 'leaf');
+
+      leafNodes.forEach((node) => {
+        if (node.data.subject) {
+          expect(node.data.subject).toHaveProperty('id');
+          expect(node.data.subject).toHaveProperty('name');
+          expect(node.data.subject).toHaveProperty('description');
+          expect(node.data.subject).toHaveProperty('isActive');
+        }
+      });
+    });
+  });
 });

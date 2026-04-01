@@ -25,6 +25,16 @@ export class TriageRuleController {
     return this.service.findAll();
   }
 
+  /**
+   * GET /triage-rules/react-flow
+   * Retorna árvore em formato React Flow (nodes + edges)
+   * Ideal para frontend renderizar com react-flow-renderer
+   */
+  @Get('react-flow')
+  findAllReactFlow() {
+    return this.service.findAllReactFlow();
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.service.findById(id);
