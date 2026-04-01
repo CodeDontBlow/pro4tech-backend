@@ -48,7 +48,9 @@ export class UserService {
     return user;
   }
 
-  async findByEmailForAuth(email: string) {
+  async findByEmailForAuth(
+    email: string,
+  ): Promise<(ResponseUserDto & { hashedPassword: string }) | null> {
     return this.userRepository.findByEmailWithPassword(email);
   }
 

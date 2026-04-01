@@ -24,7 +24,9 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from 'generated/prisma/client';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 
+//swagger
 @ApiBearerAuth()
+//guards
 @Roles(Role.ADMIN)
 @Controller('company')
 export class CompanyController {

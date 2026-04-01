@@ -16,11 +16,11 @@ export class SupportGroupRepository {
     });
   }
 
-    async findById(id: string) {
+  async findById(id: string) {
     return this.prisma.supportGroup.findFirst({
-        where: { id, deletedAt: null },
+      where: { id, deletedAt: null },
     });
-    }
+  }
 
   async findByName(name: string) {
     return this.prisma.supportGroup.findFirst({

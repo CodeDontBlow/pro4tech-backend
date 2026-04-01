@@ -46,8 +46,11 @@ export class CompanyRepository {
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; search?: string })
-    : Promise<ResponseCompanyDto[]> {
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    search?: string;
+  }): Promise<ResponseCompanyDto[]> {
     const { skip, take, search } = params;
 
     return this.prisma.company.findMany({
@@ -66,7 +69,10 @@ export class CompanyRepository {
     });
   }
 
-  async update(id: string, data: UpdateCompanyDto): Promise<ResponseCompanyDto> {
+  async update(
+    id: string,
+    data: UpdateCompanyDto,
+  ): Promise<ResponseCompanyDto> {
     return this.prisma.company.update({
       where: { id: id, deletedAt: null },
       data: {

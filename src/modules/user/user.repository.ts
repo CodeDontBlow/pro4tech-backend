@@ -32,7 +32,9 @@ export class UserRepository {
     });
   }
 
-  async findByEmailWithPassword(email: string) {
+  async findByEmailWithPassword(
+    email: string,
+  ): Promise<(ResponseUserDto & { hashedPassword: string }) | null> {
     return this.prisma.user.findUnique({
       where: { email: email, deletedAt: null },
       select: {
