@@ -1,22 +1,15 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { v7 as uuidv7 } from 'uuid';
-
-//prisma client
-import { Role } from '@prisma/enums';
-
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 //services
-import { PrismaService } from '@database/prisma/prisma.service';
 import { AccessCodeService } from '@modules/accessCode/access-code.service';
-import { UserService } from '../user/user.service';
-
 //repositories
 import { CompanyRepository } from './company.repository';
-
 //dtos
 import { ResponseCompanyDto } from './dtos/response-company.dto';
-import { ResponseUserDto } from '@modules/user/dtos/response-user.dto';
-import { CreateCompanyWithAdminDto } from './dtos/create-company-with-admin.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 
@@ -26,97 +19,21 @@ export class CompanyService {
 
   constructor(
     private readonly companyRepository: CompanyRepository,
-    private readonly prisma: PrismaService,
-    private readonly userService: UserService,
     private readonly accessCodeService: AccessCodeService,
   ) {}
-
-  async createCompanyAndAdminUser(data: CreateCompanyWithAdminDto): Promise<{
-    company: ResponseCompanyDto;
-    admin: ResponseUserDto;
-    qrCode: string;
-  }> {
-    await this.validateCompanyData(data.company);
-    await this.userService.validateEmailNotInUse(data.admin.email);
-    await this.userService.validatePhoneNotInUse(data.admin.phone);
-
-    const accessCode = await this.accessCodeService.generateAccessCode(data.company.name);
-    const hashedPassword = await bcrypt.hash(data.admin.password, 10);
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const companyId = uuidv7();
-      const adminId = uuidv7();
-      const company = await tx.company.create({
-        data: {
-          id: companyId,
-          cnpj: data.company.cnpj,
-          name: data.company.name,
-          contactName: data.company.contactName,
-          contactEmail: data.company.contactEmail,
-          accessCode: accessCode.id,
-        },
-        select: {
-          id: true,
-          cnpj: true,
-          name: true,
-          contactName: true,
-          contactEmail: true,
-          isActive: true,
-          updatedAt: true,
-        },
-      });
-
-      const admin = await tx.user.create({
-        data: {
-          id: adminId,
-          companyId: company.id,
-          name: data.admin.name,
-          phone: data.admin.phone,
-          email: data.admin.email,
-          hashedPassword,
-          role: Role.ADMIN,
-        },
-        select: {
-          id: true,
-          companyId: true,
-          phone: true,
-          email: true,
-          name: true,
-          role: true,
-          chatStatus: true,
-          lastSeen: true,
-          isActive: true,
-          lastLogin: true,
-          createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
-        },
-      });
-
-      return { company, admin };
-    });
-
-    this.logger.log(
-      `Company registered — id: ${result.company.id}, admin: ${result.admin.id}`,
-    );
-
-    return {
-      company: result.company,
-      admin: result.admin,
-      qrCode: accessCode.id,
-    };
-  }
 
   private async validateCompanyData(companyDto: CreateCompanyDto) {
     const existingCnpj = await this.companyRepository.findByCnpj(
       companyDto.cnpj,
     );
+
     if (existingCnpj) {
       this.logger.warn(
         `Register failed — CNPJ already in use: ${companyDto.cnpj}`,
       );
       throw new ConflictException(`CNPJ ${companyDto.cnpj} already in use`);
     }
+
     await this.validateContactEmailNotInUse(companyDto.contactEmail);
   }
 
@@ -125,8 +42,10 @@ export class CompanyService {
     companyIdToIgnore?: string,
   ) {
     if (!contactEmail) return;
+
     const existingEmail =
       await this.companyRepository.findByContactEmail(contactEmail);
+
     if (existingEmail && existingEmail.id !== companyIdToIgnore) {
       this.logger.warn(
         `Operation failed — contact email already in use: ${contactEmail}`,
@@ -135,21 +54,80 @@ export class CompanyService {
     }
   }
 
+  async create(data: CreateCompanyDto): Promise<ResponseCompanyDto> {
+    await this.validateCompanyData(data);
+
+    const accessCode = await this.accessCodeService.generateAccessCode(
+      data.name,
+    );
+    const company = await this.companyRepository.create(data, accessCode.id);
+
+    this.logger.log(`Company created — id: ${company.id}`);
+    return company;
+  }
+
+  async findAll(query: { page: number; limit: number; search?: string }) {
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.companyRepository.findAll({
+        skip,
+        take: limit,
+        search: query.search,
+      }),
+      this.companyRepository.count(query.search),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
+  }
+
   async update(
     id: string,
     data: UpdateCompanyDto,
   ): Promise<ResponseCompanyDto> {
+    const company = await this.companyRepository.findById(id);
+
+    if (!company) {
+      this.logger.warn(`Update failed — company not found: ${id}`);
+      throw new NotFoundException(`Company with id ${id} not found`);
+    }
+
     await this.validateContactEmailNotInUse(data.contactEmail, id);
     return this.companyRepository.update(id, data);
   }
 
-  async softDelete(id: string): Promise<ResponseCompanyDto> {
+  async softDelete(
+    id: string,
+    currentCompanyId: string,
+  ): Promise<ResponseCompanyDto> {
+    if (id === currentCompanyId) {
+      this.logger.error(
+        `Security alert — Admin tried to delete their own company: ${id}`,
+      );
+      throw new ConflictException(
+        'You cannot delete your own company for security reasons.',
+      );
+    }
+
     const company = await this.companyRepository.findById(id);
+
     if (!company) {
       this.logger.warn(`Soft delete failed — company not found: ${id}`);
-      throw new ConflictException(`Company with id ${id} not found`);
+      throw new NotFoundException(`Company with id ${id} not found`);
     }
+
     const deleted = await this.companyRepository.softDelete(id);
+
     this.logger.log(`Company soft deleted — id: ${id}`);
     return deleted;
   }
