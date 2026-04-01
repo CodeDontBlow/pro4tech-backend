@@ -7,45 +7,25 @@ import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { ResponseCompanyDto } from './dtos/response-company.dto';
 
-const companyPublicSelect = {
-  id: true,
-  cnpj: true,
-  name: true,
-  contactName: true,
-  contactEmail: true,
-  isActive: true,
-  updatedAt: true,
-  deletedAt: true,
-};
-
 @Injectable()
 export class CompanyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: string) {
+  async findById(id: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { id: id, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async findByCnpj(cnpj: string) {
+  async findByCnpj(cnpj: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { cnpj: cnpj, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async findByContactEmail(email: string) {
+  async findByContactEmail(email: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { contactEmail: email, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
@@ -63,13 +43,11 @@ export class CompanyRepository {
         accessCode: accessCodeId,
         isActive: true,
       },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; search?: string }) {
+  async findAll(params: { skip?: number; take?: number; search?: string })
+    : Promise<ResponseCompanyDto[]> {
     const { skip, take, search } = params;
 
     return this.prisma.company.findMany({
@@ -84,26 +62,20 @@ export class CompanyRepository {
             ]
           : undefined,
       },
-      select: {
-        ...companyPublicSelect,
-      },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async update(id: string, data: UpdateCompanyDto) {
+  async update(id: string, data: UpdateCompanyDto): Promise<ResponseCompanyDto> {
     return this.prisma.company.update({
       where: { id: id, deletedAt: null },
       data: {
         ...data,
       },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string): Promise<ResponseCompanyDto> {
     return this.prisma.company.update({
       where: {
         id: id,
@@ -112,9 +84,6 @@ export class CompanyRepository {
       data: {
         deletedAt: new Date(),
         isActive: false,
-      },
-      select: {
-        ...companyPublicSelect,
       },
     });
   }

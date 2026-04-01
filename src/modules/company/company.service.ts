@@ -12,6 +12,7 @@ import { CompanyRepository } from './company.repository';
 import { ResponseCompanyDto } from './dtos/response-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 @Injectable()
 export class CompanyService {
@@ -66,7 +67,8 @@ export class CompanyService {
     return company;
   }
 
-  async findAll(query: { page: number; limit: number; search?: string }) {
+  async findAll(query: { page: number; limit: number; search?: string })
+    : Promise<ResponsePaginationDto<ResponseCompanyDto>> {
     const page = Number(query.page || 1);
     const limit = Number(query.limit || 10);
     const skip = (page - 1) * limit;
@@ -79,16 +81,7 @@ export class CompanyService {
       }),
       this.companyRepository.count(query.search),
     ]);
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        lastPage: Math.ceil(total / limit),
-        limit,
-      },
-    };
+    return new ResponsePaginationDto(data, total, page, limit);
   }
 
   async update(

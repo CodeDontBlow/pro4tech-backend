@@ -28,6 +28,12 @@ export class ResponseCompanyDto {
   })
   contactEmail: string;
 
+  @ApiProperty({
+    example: 'ABC123',
+    description: 'Código de acesso',
+  })
+  accessCode: string;
+
   @ApiProperty({ example: true, description: 'Empresa está ativa?' })
   isActive: boolean;
 }
