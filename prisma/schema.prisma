@@ -168,13 +168,14 @@ model TicketHistory {
 
 model TicketSubject {
     id              String          @id
-    name            String
+    name            String          @unique
     description     String
-    isActive        Boolean
+    isActive        Boolean         @default(true)
     createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt    
 
     tickets         Ticket[]
+    triageRule      TriageRule?
 }
 
 model TriageRule {
@@ -183,9 +184,11 @@ model TriageRule {
     question        String?
     answerTrigger   String?
     isLeaf          Boolean         @default(false)
-    targetGroupId   String?   
+    targetGroupId   String?
+    subjectId       String?         @unique
 
-    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id])
+    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id], onDelete: Cascade)
     children        TriageRule[]    @relation("TriageNode")
     supportGroup    SupportGroup?   @relation(fields: [targetGroupId], references: [id])
+    subject         TicketSubject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 }
