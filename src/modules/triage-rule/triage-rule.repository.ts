@@ -42,8 +42,7 @@ export class TriageRuleRepository {
   }
 
   async findAll(): Promise<ResponseTriageRuleDto[]> {
-    const roots = await this.prisma.triageRule.findMany({
-      where: { parentId: null },
+    const allRules = await this.prisma.triageRule.findMany({
       include: {
         children: true,
         subject: {
@@ -63,7 +62,7 @@ export class TriageRuleRepository {
         },
       },
     });
-    return roots;
+    return allRules;
   }
 
   async findById(id: string): Promise<ResponseTriageRuleDto | null> {
