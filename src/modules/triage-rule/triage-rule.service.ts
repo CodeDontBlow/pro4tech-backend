@@ -18,58 +18,52 @@ export class TriageRuleService {
   ) {}
 
   async create(data: CreateTriageRuleDto): Promise<ResponseTriageRuleDto> {
-    // Validate: if not a leaf, question is required
+    // Validação: se não for folha, pergunta é obrigatória
     if (!data.isLeaf && !data.question) {
-      throw new BadRequestException('question is required when isLeaf is false');
+      throw new BadRequestException('Pergunta é obrigatória quando isLeaf é false');
     }
 
-    // Validate: if leaf, answerTrigger should be provided
+    // Validação: se for folha, answerTrigger deve ser fornecido
     if (data.isLeaf && !data.answerTrigger) {
-      throw new BadRequestException('answerTrigger is required when isLeaf is true');
+      throw new BadRequestException('Resposta disparadora é obrigatória quando isLeaf é true');
     }
 
-    // Validate parentId exists if provided
+    // Validação: parentId deve existir se fornecido
     if (data.parentId) {
       const parentExists = await this.repository.existsWithParentId(data.parentId);
       if (!parentExists) {
-        throw new BadRequestException(`Parent triage rule with id ${data.parentId} not found`);
-      }
-
-      // Validate no cycles
-      const hasCycle = await this.wouldCreateCycle(data.parentId, data.parentId);
-      if (hasCycle) {
-        throw new BadRequestException('Creating this parent relationship would create a cycle in the tree');
+        throw new BadRequestException(`Regra de triagem pai com id ${data.parentId} não encontrada`);
       }
     }
 
-    // Validate targetGroupId exists if provided
+    // Validação: targetGroupId deve existir se fornecido
     if (data.targetGroupId) {
       const groupExists = await this.prisma.supportGroup.findUnique({
         where: { id: data.targetGroupId },
         select: { id: true },
       });
       if (!groupExists) {
-        throw new BadRequestException(`Support group with id ${data.targetGroupId} not found`);
+        throw new BadRequestException(`Grupo de suporte com id ${data.targetGroupId} não encontrado`);
       }
     }
 
-    // Validate subjectId exists and is unique if provided
+    // Validação: subjectId deve existir e ser único se fornecido
     if (data.subjectId) {
       const subjectExists = await this.prisma.ticketSubject.findUnique({
         where: { id: data.subjectId },
         select: { id: true },
       });
       if (!subjectExists) {
-        throw new BadRequestException(`Ticket subject with id ${data.subjectId} not found`);
+        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} não encontrado`);
       }
 
-      // Check if subject is already used by another triage rule
+      // Verifica se o assunto já é utilizado por outra regra de triagem
       const subjectUsed = await this.prisma.triageRule.findUnique({
         where: { subjectId: data.subjectId },
         select: { id: true },
       });
       if (subjectUsed) {
-        throw new BadRequestException(`Ticket subject with id ${data.subjectId} is already used by another triage rule`);
+        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`);
       }
     }
 
@@ -87,51 +81,51 @@ export class TriageRuleService {
   async findById(id: string): Promise<ResponseTriageRuleDto> {
     const rule = await this.repository.findById(id);
     if (!rule) {
-      throw new NotFoundException(`Triage rule with id ${id} not found`);
+      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
     }
     return rule;
   }
 
   async update(id: string, data: UpdateTriageRuleDto): Promise<ResponseTriageRuleDto> {
-    // Verify exists
+    // Verifica se existe
     const existing = await this.repository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Triage rule with id ${id} not found`);
+      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
     }
 
-    // Validate: if not a leaf, question is required (or was already provided)
+    // Validação: se não for folha, pergunta é obrigatória (ou já foi fornecida)
     if (data.isLeaf === false && !data.question && !existing.question) {
-      throw new BadRequestException('question is required when isLeaf is false');
+      throw new BadRequestException('Pergunta é obrigatória quando isLeaf é false');
     }
 
-    // Validate targetGroupId if provided
+    // Validação: targetGroupId se fornecido
     if (data.targetGroupId) {
       const groupExists = await this.prisma.supportGroup.findUnique({
         where: { id: data.targetGroupId },
         select: { id: true },
       });
       if (!groupExists) {
-        throw new BadRequestException(`Support group with id ${data.targetGroupId} not found`);
+        throw new BadRequestException(`Grupo de suporte com id ${data.targetGroupId} não encontrado`);
       }
     }
 
-    // Validate subjectId if provided and changed
+    // Validação: subjectId se fornecido e alterado
     if (data.subjectId && data.subjectId !== existing.subjectId) {
       const subjectExists = await this.prisma.ticketSubject.findUnique({
         where: { id: data.subjectId },
         select: { id: true },
       });
       if (!subjectExists) {
-        throw new BadRequestException(`Ticket subject with id ${data.subjectId} not found`);
+        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} não encontrado`);
       }
 
-      // Check if subject is already used by another triage rule
+      // Verifica se o assunto já é utilizado por outra regra de triagem
       const subjectUsed = await this.prisma.triageRule.findUnique({
         where: { subjectId: data.subjectId },
         select: { id: true },
       });
       if (subjectUsed) {
-        throw new BadRequestException(`Ticket subject with id ${data.subjectId} is already used by another triage rule`);
+        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`);
       }
     }
 
@@ -141,7 +135,7 @@ export class TriageRuleService {
   async delete(id: string): Promise<void> {
     const existing = await this.repository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Triage rule with id ${id} not found`);
+      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
     }
 
     await this.repository.delete(id);
@@ -150,9 +144,9 @@ export class TriageRuleService {
   async traverse(answerTrigger: string, currentNodeId?: string): Promise<TraverseResponseDto> {
     let parentId: string | null = null;
 
-    // If no current node provided, start from root
+    // Se nenhum nó atual fornecido, começar pela raiz
     if (!currentNodeId) {
-      // Find any root node (parentId is null)
+      // Encontra qualquer nó raiz (parentId é null)
       const roots = await this.prisma.triageRule.findMany({
         where: { parentId: null },
         select: { id: true },
@@ -160,7 +154,7 @@ export class TriageRuleService {
       });
 
       if (roots.length === 0) {
-        throw new BadRequestException('No root triage rules found');
+        throw new BadRequestException('Nenhuma regra de triagem raiz encontrada');
       }
 
       parentId = roots[0].id;
@@ -168,16 +162,16 @@ export class TriageRuleService {
       parentId = currentNodeId;
     }
 
-    // Find child with matching answerTrigger
+    // Encontra filho com resposta disparadora correspondente
     const nextNode = await this.repository.findByAnswerTrigger(answerTrigger, parentId);
 
     if (!nextNode) {
       throw new BadRequestException(
-        `No triage rule found with answerTrigger "${answerTrigger}" under parent node`,
+        `Nenhuma regra de triagem encontrada com a resposta disparadora "${answerTrigger}" sob o nó pai`,
       );
     }
 
-    // Fetch children for response
+    // Busca filhos para a resposta
     const children = await this.repository.findByParentId(nextNode.id);
 
     return {
@@ -231,22 +225,22 @@ export class TriageRuleService {
     const edges = [];
     const processedIds = new Set<string>();
 
-    // Helper: recursively process tree
+    // Auxiliar: processa recursivamente a árvore
     const flattenTree = (rule: ResponseTriageRuleDto) => {
       if (processedIds.has(rule.id)) return;
       processedIds.add(rule.id);
 
-      // Determine node type
+      // Determina tipo de nó
       let nodeType: 'root' | 'question' | 'leaf' = 'question';
       if (!rule.parentId) nodeType = 'root';
       if (rule.isLeaf) nodeType = 'leaf';
 
-      // Create label for display
+      // Cria rótulo para exibição
       const label = rule.isLeaf
         ? (rule.subject?.name || 'Ticket Subject')
         : (rule.question || 'Question Node');
 
-      // Create node data
+      // Cria dados do nó
       const nodeData = {
         id: rule.id,
         label,
@@ -262,20 +256,20 @@ export class TriageRuleService {
         childrenCount: rule.children?.length || 0,
       };
 
-      // Add node
+      // Adiciona nó
       nodes.push({
         id: rule.id,
         data: nodeData,
         type: 'default',
       });
 
-      // Process children and create edges
+      // Processa filhos e cria arestas
       if (rule.children && rule.children.length > 0) {
         rule.children.forEach((child) => {
           // Recursively process child
           flattenTree(child);
 
-          // Create edge from parent to child
+          // Cria aresta do pai para o filho
           edges.push({
             id: `${rule.id}->${child.id}`,
             source: rule.id,

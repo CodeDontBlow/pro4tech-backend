@@ -14,6 +14,7 @@ import { CreateTriageRuleDto } from './dtos/create-triage-rule.dto';
 import { UpdateTriageRuleDto } from './dtos/update-triage-rule.dto';
 import { TraverseTriageRuleDto } from './dtos/traverse-triage-rule.dto';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
+import { Public } from '@modules/auth/decorators/public.decorator';
 import { Role } from '@prisma/enums';
 
 @Controller('triage-rules')
@@ -21,6 +22,7 @@ export class TriageRuleController {
   constructor(private readonly service: TriageRuleService) {}
 
   @Get()
+  @Roles(Role.ADMIN)
   findAll() {
     return this.service.findAll();
   }
@@ -31,11 +33,13 @@ export class TriageRuleController {
    * Ideal para frontend renderizar com react-flow-renderer
    */
   @Get('react-flow')
+  @Roles(Role.ADMIN)
   findAllReactFlow() {
     return this.service.findAllReactFlow();
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN)
   findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
@@ -60,11 +64,15 @@ export class TriageRuleController {
   }
 
   @Post('traverse')
+  @Public()
+  @HttpCode(HttpStatus.OK)
   traverse(@Body() dto: TraverseTriageRuleDto) {
     return this.service.traverse(dto.answerTrigger);
   }
 
   @Post(':id/traverse')
+  @Public()
+  @HttpCode(HttpStatus.OK)
   traverseFrom(@Param('id') id: string, @Body() dto: TraverseTriageRuleDto) {
     return this.service.traverse(dto.answerTrigger, id);
   }

@@ -14,6 +14,7 @@ import { TicketSubjectService } from './ticket-subject.service';
 import { CreateTicketSubjectDto } from './dtos/create-ticket-subject.dto';
 import { UpdateTicketSubjectDto } from './dtos/update-ticket-subject.dto';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
+import { Public } from '@modules/auth/decorators/public.decorator';
 import { Role } from '@prisma/enums';
 
 @Controller('ticket-subjects')
@@ -21,12 +22,14 @@ export class TicketSubjectController {
   constructor(private readonly service: TicketSubjectService) {}
 
   @Get()
+  @Public()
   findAll(@Query('includeInactive') includeInactive?: string) {
     const onlyActive = includeInactive !== 'true';
     return this.service.findAll(onlyActive);
   }
 
   @Get(':id')
+  @Public()
   findById(@Param('id') id: string) {
     return this.service.findById(id);
   }

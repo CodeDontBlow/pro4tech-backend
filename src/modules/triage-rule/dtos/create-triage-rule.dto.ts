@@ -6,7 +6,7 @@ export class CreateTriageRuleDto {
   parentId?: string;
 
   @ValidateIf((o) => !o.isLeaf)
-  @IsNotEmpty({ message: 'question is required when isLeaf is false' })
+  @IsNotEmpty({ message: 'Pergunta é obrigatória quando isLeaf é false' })
   @IsString()
   question?: string;
 

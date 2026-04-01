@@ -75,7 +75,7 @@ describe('TriageRuleService', () => {
   });
 
   describe('create', () => {
-    it('should create a triage rule with parent validation', async () => {
+    it('deve criar uma regra de triagem com validação de pai', async () => {
       mockRepository.existsWithParentId.mockResolvedValue(true);
       mockPrismaService.triageRule.findUnique.mockResolvedValue(null);
       mockRepository.create.mockResolvedValue(mockTriageRule);
@@ -91,7 +91,7 @@ describe('TriageRuleService', () => {
       expect(mockRepository.create).toHaveBeenCalledWith(dto);
     });
 
-    it('should fail if question is missing for non-leaf node', async () => {
+    it('deve falhar se a pergunta estiver faltando para um nó não-folha', async () => {
       const dto = {
         isLeaf: false,
       };
@@ -99,7 +99,7 @@ describe('TriageRuleService', () => {
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
     });
 
-    it('should fail if answerTrigger is missing for leaf node', async () => {
+    it('deve falhar se answerTrigger estiver faltando para um nó folha', async () => {
       const dto = {
         isLeaf: true,
       };
@@ -107,7 +107,7 @@ describe('TriageRuleService', () => {
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
     });
 
-    it('should fail if parent does not exist', async () => {
+    it('deve falhar se o pai não existir', async () => {
       mockRepository.existsWithParentId.mockResolvedValue(false);
 
       const dto = {
@@ -119,7 +119,7 @@ describe('TriageRuleService', () => {
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
     });
 
-    it('should fail if creating a cycle', async () => {
+    it('deve falhar se criar um ciclo', async () => {
       mockRepository.existsWithParentId.mockResolvedValue(true);
       mockPrismaService.triageRule.findUnique
         .mockResolvedValueOnce({ id: 'parent-id', parentId: 'child-id-1' })
@@ -131,13 +131,13 @@ describe('TriageRuleService', () => {
         parentId: 'parent-id',
       };
 
-      // This should detect a potential cycle
+      // Isto deve detectar um ciclo potencial
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('findById', () => {
-    it('should return a triage rule', async () => {
+    it('deve retornar uma regra de triagem', async () => {
       mockRepository.findById.mockResolvedValue(mockTriageRule);
 
       const result = await service.findById('test-id-1');
@@ -145,7 +145,7 @@ describe('TriageRuleService', () => {
       expect(result).toEqual(mockTriageRule);
     });
 
-    it('should throw NotFoundException if not found', async () => {
+    it('deve lançar NotFoundException se não encontrado', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
       await expect(service.findById('non-existent')).rejects.toThrow(
@@ -155,7 +155,7 @@ describe('TriageRuleService', () => {
   });
 
   describe('traverse', () => {
-    it('should traverse the tree to find next node', async () => {
+    it('deve percorrer a árvore para encontrar o próximo nó', async () => {
       const nextNode = {
         ...mockTriageRule,
         id: 'node-2',
@@ -184,7 +184,7 @@ describe('TriageRuleService', () => {
       expect(result.children).toHaveLength(2);
     });
 
-    it('should throw BadRequestException if answer not found', async () => {
+    it('deve lançar BadRequestException se a resposta não for encontrada', async () => {
       mockPrismaService.triageRule.findMany.mockResolvedValue([
         { id: 'root-id' },
       ]);
@@ -195,7 +195,7 @@ describe('TriageRuleService', () => {
       );
     });
 
-    it('should throw error if no root nodes exist', async () => {
+    it('deve lançar erro se nenhum nó raiz existir', async () => {
       mockPrismaService.triageRule.findMany.mockResolvedValue([]);
 
       await expect(service.traverse('any-answer')).rejects.toThrow(
@@ -205,7 +205,7 @@ describe('TriageRuleService', () => {
   });
 
   describe('delete', () => {
-    it('should delete a triage rule', async () => {
+    it('deve deletar uma regra de triagem', async () => {
       mockRepository.findById.mockResolvedValue(mockTriageRule);
       mockRepository.delete.mockResolvedValue(undefined);
 
@@ -214,7 +214,7 @@ describe('TriageRuleService', () => {
       expect(mockRepository.delete).toHaveBeenCalledWith('test-id-1');
     });
 
-    it('should throw NotFoundException if rule does not exist', async () => {
+    it('deve lançar NotFoundException se a regra não existir', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
       await expect(service.delete('non-existent')).rejects.toThrow(

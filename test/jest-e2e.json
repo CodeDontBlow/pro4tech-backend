@@ -5,5 +5,14 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "moduleNameMapper": {
+    "^@prisma/enums$": "<rootDir>/../generated/prisma/enums.ts",
+    "^generated/(.*)$": "<rootDir>/../generated/$1",
+    "^src/(.*)$": "<rootDir>/../src/$1",
+    "^@modules/(.*)$": "<rootDir>/../src/modules/$1",
+    "^@database/(.*)$": "<rootDir>/../src/database/$1",
+    "^@shared/(.*)$": "<rootDir>/../src/shared/$1"
+  },
+  "testPathIgnorePatterns": ["/node_modules/", "/dist/"]
 }

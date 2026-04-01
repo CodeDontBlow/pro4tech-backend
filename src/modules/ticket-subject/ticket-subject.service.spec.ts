@@ -47,7 +47,7 @@ describe('TicketSubjectService', () => {
   });
 
   describe('create', () => {
-    it('should create a new ticket subject', async () => {
+    it('deve criar um novo assunto de tíquete', async () => {
       mockRepository.findByName.mockResolvedValue(null);
       mockRepository.create.mockResolvedValue(mockTicketSubject);
 
@@ -62,7 +62,7 @@ describe('TicketSubjectService', () => {
       expect(mockRepository.create).toHaveBeenCalledWith(dto);
     });
 
-    it('should fail if name already exists', async () => {
+    it('deve falhar se o nome já existe', async () => {
       mockRepository.findByName.mockResolvedValue(mockTicketSubject);
 
       const dto = {
@@ -76,7 +76,7 @@ describe('TicketSubjectService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all active subjects when onlyActive is true', async () => {
+    it('deve retornar todos os assuntos ativos quando onlyActive é true', async () => {
       mockRepository.findAll.mockResolvedValue([mockTicketSubject]);
 
       const result = await service.findAll(true);
@@ -85,7 +85,7 @@ describe('TicketSubjectService', () => {
       expect(mockRepository.findAll).toHaveBeenCalledWith(true);
     });
 
-    it('should return all subjects when onlyActive is false', async () => {
+    it('deve retornar todos os assuntos quando onlyActive é false', async () => {
       mockRepository.findAll.mockResolvedValue([mockTicketSubject]);
 
       const result = await service.findAll(false);
@@ -96,7 +96,7 @@ describe('TicketSubjectService', () => {
   });
 
   describe('findById', () => {
-    it('should return a ticket subject', async () => {
+    it('deve retornar um assunto de tíquete', async () => {
       mockRepository.findById.mockResolvedValue(mockTicketSubject);
 
       const result = await service.findById('subject-id-1');
@@ -104,7 +104,7 @@ describe('TicketSubjectService', () => {
       expect(result).toEqual(mockTicketSubject);
     });
 
-    it('should throw NotFoundException if not found', async () => {
+    it('deve lançar NotFoundException se não encontrado', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
       await expect(service.findById('non-existent')).rejects.toThrow(
@@ -114,7 +114,7 @@ describe('TicketSubjectService', () => {
   });
 
   describe('update', () => {
-    it('should update a ticket subject', async () => {
+    it('deve atualizar um assunto de tíquete', async () => {
       mockRepository.findById.mockResolvedValue(mockTicketSubject);
       mockRepository.update.mockResolvedValue({
         ...mockTicketSubject,
@@ -143,7 +143,7 @@ describe('TicketSubjectService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should fail if new name already exists', async () => {
+    it('deve falhar se o novo nome já existe', async () => {
       mockRepository.findById.mockResolvedValue(mockTicketSubject);
       mockRepository.findByName.mockResolvedValue({
         id: 'different-id',
@@ -161,7 +161,7 @@ describe('TicketSubjectService', () => {
   });
 
   describe('delete', () => {
-    it('should delete a ticket subject', async () => {
+    it('deve deletar um assunto de tíquete', async () => {
       mockRepository.findById.mockResolvedValue(mockTicketSubject);
       mockRepository.delete.mockResolvedValue(undefined);
 
