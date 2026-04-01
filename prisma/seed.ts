@@ -35,13 +35,12 @@ type AgentSeed = UserSeed & {
 const DEFAULT_PASSWORD = 'password123';
 
 async function databaseHasData() {
-  const [companyCount, userCount, agentCount, ticketCount] =
-    await Promise.all([
-      prisma.company.count(),
-      prisma.user.count(),
-      prisma.agent.count(),
-      prisma.ticket.count(),
-    ]);
+  const [companyCount, userCount, agentCount, ticketCount] = await Promise.all([
+    prisma.company.count(),
+    prisma.user.count(),
+    prisma.agent.count(),
+    prisma.ticket.count(),
+  ]);
 
   return companyCount + userCount + agentCount + ticketCount > 0;
 }

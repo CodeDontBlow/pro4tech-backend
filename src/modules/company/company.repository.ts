@@ -1,73 +1,103 @@
 import { Injectable } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 //services
-import { PrismaService } from '@database/prisma/prisma.service';
+import { PrismaService } from 'src/database/prisma/prisma.service';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
-
-const companyPublicSelect = {
-  id: true,
-  cnpj: true,
-  name: true,
-  contactName: true,
-  contactEmail: true,
-  isActive: true,
-  updatedAt: true,
-  deletedAt: true,
-};
+import { CreateCompanyDto } from './dtos/create-company.dto';
+import { ResponseCompanyDto } from './dtos/response-company.dto';
 
 @Injectable()
 export class CompanyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: string) {
+  async findById(id: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { id: id, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async findByCnpj(cnpj: string) {
+  async findByCnpj(cnpj: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { cnpj: cnpj, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
-      },
     });
   }
 
-  async findByContactEmail(email: string) {
+  async findByContactEmail(email: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { contactEmail: email, deletedAt: null },
-      select: {
-        ...companyPublicSelect,
+    });
+  }
+
+  async create(
+    data: CreateCompanyDto,
+    accessCodeId: string,
+  ): Promise<ResponseCompanyDto> {
+    return this.prisma.company.create({
+      data: {
+        id: uuidv7(),
+        cnpj: data.cnpj,
+        name: data.name,
+        contactName: data.contactName,
+        contactEmail: data.contactEmail,
+        accessCode: accessCodeId,
+        isActive: true,
       },
     });
   }
 
-  async update(id: string, data: UpdateCompanyDto) {
+  async findAll(params: { skip?: number; take?: number; search?: string })
+    : Promise<ResponseCompanyDto[]> {
+    const { skip, take, search } = params;
+
+    return this.prisma.company.findMany({
+      skip,
+      take,
+      where: {
+        deletedAt: null,
+        OR: search
+          ? [
+              { name: { contains: search, mode: 'insensitive' } },
+              { cnpj: { contains: search } },
+            ]
+          : undefined,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async update(id: string, data: UpdateCompanyDto): Promise<ResponseCompanyDto> {
     return this.prisma.company.update({
       where: { id: id, deletedAt: null },
       data: {
         ...data,
-        updatedAt: new Date(),
-      },
-      select: {
-        ...companyPublicSelect,
       },
     });
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string): Promise<ResponseCompanyDto> {
     return this.prisma.company.update({
-      where: { id: id, deletedAt: null },
+      where: {
+        id: id,
+        deletedAt: null,
+      },
       data: {
         deletedAt: new Date(),
         isActive: false,
       },
-      select: {
-        ...companyPublicSelect,
+    });
+  }
+
+  async count(search?: string): Promise<number> {
+    return this.prisma.company.count({
+      where: {
+        deletedAt: null,
+        OR: search
+          ? [
+              { name: { contains: search, mode: 'insensitive' } },
+              { cnpj: { contains: search } },
+            ]
+          : undefined,
       },
     });
   }

@@ -75,6 +75,7 @@ model Company {
     contactEmail    String?         @unique
     accessCode      String          @unique
     isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
     deletedAt       DateTime?
 

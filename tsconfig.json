@@ -19,11 +19,11 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "paths":{
+    "paths": {
       "@modules/*": ["src/modules/*"],
-      "@prisma/*": ["generated/prisma/*"],
       "@shared/*": ["src/shared/*"],
-      "@database/*": ["src/database/*"]
+      "@database/*": ["src/database/*"],
+      "@common/*": ["src/common/*"]
     }
   }
 }
