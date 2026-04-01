@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TicketService } from './ticket.service';
-import { PrismaTicketRepository } from './ticket.repository';
+import { TicketRepository } from './ticket.repository';
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketController } from './ticket.controller';
 
 @Module({
   providers: [
     TicketService,
     PrismaService,
-    PrismaTicketRepository,
+    TicketRepository,
+    TicketController
   ],
   exports: [TicketService],
 })

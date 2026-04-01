@@ -1,70 +1,55 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Ticket, TicketStatus, TicketPriority } from './ticket.entity';
+import { CreateTicketDto } from './dtos/create-ticket.dto';
+import { UpdateTicketDto } from './dtos/update-ticket.dto';
+import { TicketStatus } from '../../generated/prisma/enums';
 
 @Injectable()
-export class PrismaTicketRepository {
-  constructor(private prisma: PrismaService) {}
+export class TicketRepository {
+  constructor(private readonly prisma: PrismaService) {}
 
-  async save(ticket: Ticket): Promise<void> {
-    await this.prisma.ticket.upsert({
-      where: { tkt_id: ticket.getTicketId() },
-      update: {
-        tkt_agentId: ticket.getAgentId(),
-        tkt_status: ticket.getStatus(),
-        tkt_priority: ticket.getPriority(),
-        tkt_ratingScore: ticket.getRatingScore(),
-        tkt_ratingComment: ticket.getRatingComment(),
-      },
-      create: {
-        tkt_id: ticket.getTicketId(),
-        tkt_companyId: ticket.getCompanyId(),
-        tkt_clientId: ticket.getClientId(),
-        tkt_agentId: ticket.getAgentId(),
-        tkt_supportGroupId: ticket.getSupportGroupId(),
-        tkt_subjectId: ticket.getSubjectId(),
-        tkt_status: ticket.getStatus(),
-        tkt_priority: ticket.getPriority(),
-        tkt_ratingScore: ticket.getRatingScore(),
-        tkt_ratingComment: ticket.getRatingComment(),
+  async create(dto: CreateTicketDto) {
+    return this.prisma.ticket.create({
+      data: {
+        tkt_companyId: dto.companyId,
+        tkt_clientId: dto.clientId,
+        tkt_agentId: dto.agentId,
+        tkt_supportGroupId: dto.supportGroupId,
+        tkt_subjectId: dto.subjectId,
+        tkt_status: dto.status ?? 'TRIAGE',
+        tkt_priority: dto.priority ?? null,
       },
     });
   }
 
-  async findById(ticket_id: string): Promise<Ticket | null> {
-    const data = await this.prisma.ticket.findUnique({
-      where: { tkt_id: ticket_id },
-    });
-
-    if (!data) return null;
-
-    return this.mapToEntity(data);
-  }
-
-  async findAll(): Promise<Ticket[]> {
-    const tickets = await this.prisma.ticket.findMany();
-    return tickets.map((data) => this.mapToEntity(data));
-  }
-
-  async delete(ticket_id: string): Promise<void> {
-    await this.prisma.ticket.delete({
-      where: { tkt_id: ticket_id },
+  async update(ticketId: string, dto: UpdateTicketDto) {
+    return this.prisma.ticket.update({
+      where: { tkt_id: ticketId , tkt_closedAt: null},
+      data: {
+        tkt_status: dto.status,
+        tkt_priority: dto.priority,
+        tkt_ratingScore: dto.ratingScore,
+        tkt_ratingComment: dto.ratingComment,
+        tkt_agentId: dto.agentId,
+        tkt_closedAt: dto.closedAt === TicketStatus.OPENED ? new Date() : undefined,
+      }
     });
   }
 
-  private mapToEntity(data: any): Ticket {
-    return new Ticket(
-      data.tkt_id,
-      data.tkt_companyId,
-      data.tkt_clientId,
-      data.tkt_agentId,
-      data.tkt_supportGroupId,
-      data.tkt_subjectId,
-      data.tkt_status as TicketStatus,
-      data.tkt_priority as TicketPriority,
-      data.tkt_ratingScore,
-      data.tkt_ratingComment
-    );
+  async findById(ticketId: string) {
+    return this.prisma.ticket.findUnique({
+      where: { tkt_id: ticketId }
+    });
+  }
+
+  async findAll() {
+    return this.prisma.ticket.findMany({
+    });
+  }
+
+  async delete(ticketId: string) {
+    return this.prisma.ticket.delete({
+      where: { tkt_id: ticketId }
+    });
   }
 }
-
