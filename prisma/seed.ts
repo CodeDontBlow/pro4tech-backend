@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Role } from '../generated/prisma/enums';
+import { Role, SupportLevel } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -28,7 +28,7 @@ type UserSeed = {
 };
 
 type AgentSeed = UserSeed & {
-  supportLevel: string;
+  supportLevel: SupportLevel;
   canAnswer: boolean;
 };
 
@@ -143,7 +143,7 @@ async function seedPro4Tech() {
       email: 'lucas.ramos@pro4tech.com',
       phone: '+5511999000002',
       role: Role.AGENT,
-      supportLevel: 'L1',
+      supportLevel: SupportLevel.LEVEL_1,
       canAnswer: true,
     },
     {
@@ -151,7 +151,7 @@ async function seedPro4Tech() {
       email: 'fernanda.lima@pro4tech.com',
       phone: '+5511999000003',
       role: Role.AGENT,
-      supportLevel: 'L1',
+      supportLevel: SupportLevel.LEVEL_1,
       canAnswer: true,
     },
     {
@@ -159,7 +159,7 @@ async function seedPro4Tech() {
       email: 'bruno.araujo@pro4tech.com',
       phone: '+5511999000004',
       role: Role.AGENT,
-      supportLevel: 'L2',
+      supportLevel: SupportLevel.LEVEL_2,
       canAnswer: true,
     },
     {
@@ -167,7 +167,7 @@ async function seedPro4Tech() {
       email: 'julia.martins@pro4tech.com',
       phone: '+5511999000005',
       role: Role.AGENT,
-      supportLevel: 'L2',
+      supportLevel: SupportLevel.LEVEL_2,
       canAnswer: true,
     },
     {
@@ -175,7 +175,7 @@ async function seedPro4Tech() {
       email: 'diego.santos@pro4tech.com',
       phone: '+5511999000006',
       role: Role.AGENT,
-      supportLevel: 'L1',
+      supportLevel: SupportLevel.LEVEL_1,
       canAnswer: true,
     },
   ];
