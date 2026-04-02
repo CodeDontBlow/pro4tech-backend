@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class SignInDto {
   @ApiProperty({
-    example: 'usuario@email.com',
+    example: 'admin@pro4tech.com',
     description: 'Email do usuário',
     required: true,
   })
@@ -12,7 +12,7 @@ export class SignInDto {
   email: string;
 
   @ApiProperty({
-    example: 'senha123',
+    example: 'password123',
     description: 'Senha do usuário',
     required: true,
     maxLength: 100,

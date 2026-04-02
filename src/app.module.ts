@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
 import { CompanyModule } from '@modules/company/company.module';
+import { SupportGroupModule } from './modules/support-group/support-group.module';
 import { TriageRuleModule } from './modules/triage-rule/triage-rule.module';
 import { TicketSubjectModule } from './modules/ticket-subject/ticket-subject.module';
 
@@ -18,6 +19,7 @@ import { TicketSubjectModule } from './modules/ticket-subject/ticket-subject.mod
     UserModule,
     TriageRuleModule,
     TicketSubjectModule,
+    SupportGroupModule,
   ],
 })
 export class AppModule {}

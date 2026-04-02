@@ -40,6 +40,11 @@ enum TicketAction {
     RETURN
 }
 
+enum SupportLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
 
 
 
@@ -75,6 +80,7 @@ model Company {
     contactEmail    String?         @unique
     accessCode      String          @unique
     isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
     deletedAt       DateTime?
 
@@ -84,7 +90,7 @@ model Company {
 
 model Agent {
     id              String          @id
-    supportLevel    String
+    supportLevel    SupportLevel
     canAnswer       Boolean
 
     user            User            @relation(fields: [id], references: [id])

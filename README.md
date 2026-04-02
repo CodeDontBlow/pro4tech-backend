@@ -50,6 +50,7 @@ Você pode rodar o backend de duas formas principais:
    ```
 
 4. **Inicie o backend localmente**
+
    ```bash
    npm install
    npx prisma generate
@@ -76,6 +77,7 @@ Repita os passos 1 e 2 da Opção 1 para clonar o repositório e configurar as v
    npx prisma migrate deploy
    npm run start:dev
    ```
+
 5. **Acessar as Rotas**: http://localhost:3333/api
 
 ## Estrutura do Projeto
