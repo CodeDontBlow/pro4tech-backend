@@ -181,7 +181,7 @@ model TicketSubject {
     updatedAt       DateTime        @updatedAt    
 
     tickets         Ticket[]
-    triageRule      TriageRule?
+    triageRules     TriageRule[]
 }
 
 model TriageRule {
@@ -191,7 +191,7 @@ model TriageRule {
     answerTrigger   String?
     isLeaf          Boolean         @default(false)
     targetGroupId   String?
-    subjectId       String?         @unique
+    subjectId       String?
 
     parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id], onDelete: Cascade)
     children        TriageRule[]    @relation("TriageNode")

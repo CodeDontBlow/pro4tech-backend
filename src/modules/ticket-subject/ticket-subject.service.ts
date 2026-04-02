@@ -47,6 +47,16 @@ export class TicketSubjectService {
       }
     }
 
+    // Se está desativando o subject (isActive = false), nullificar referências em TriageRules
+    if (data.isActive === false && existing.isActive === true) {
+      const updatedRules = await this.repository.nullifyTriageRulesSubject(id);
+      if (updatedRules > 0) {
+        this.logger.log(
+          `Triage rules updated with null subject — subjectId: ${id}, updated: ${updatedRules}`,
+        );
+      }
+    }
+
     return this.repository.update(id, data);
   }
 

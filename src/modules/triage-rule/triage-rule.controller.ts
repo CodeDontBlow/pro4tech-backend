@@ -23,7 +23,7 @@ import { UpdateTriageRuleDto } from './dtos/update-triage-rule.dto';
 import { TraverseTriageRuleDto } from './dtos/traverse-triage-rule.dto';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Public } from '@modules/auth/decorators/public.decorator';
-import { Role } from '@prisma/enums';
+import { Role } from 'generated/prisma/client';
 
 @ApiTags('Triage Rules')
 @ApiBearerAuth('bearer')
@@ -47,49 +47,6 @@ export class TriageRuleController {
   })
   findAll() {
     return this.service.findAll();
-  }
-
-  @Get('react-flow')
-  @Roles(Role.ADMIN)
-  @ApiOperation({
-    summary: 'Obter árvore de triagem em formato React Flow',
-    description: 'Retorna a árvore hierárquica em formato flat (nodes + edges) otimizado para React Flow. Ideal para frontend renderizar com react-flow-renderer.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Estrutura React Flow com nodes e edges',
-    schema: {
-      example: {
-        nodes: [
-          {
-            id: 'node-1',
-            data: {
-              id: 'node-1',
-              label: 'Qual é o seu problema?',
-              question: 'Qual é o seu problema?',
-              nodeType: 'root',
-              childrenCount: 2,
-            },
-            type: 'default',
-          },
-        ],
-        edges: [
-          {
-            id: 'edge-1',
-            source: 'node-1',
-            target: 'node-2',
-            label: 'Faturamento',
-          },
-        ],
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Token não fornecido ou inválido',
-  })
-  findAllReactFlow() {
-    return this.service.findAllReactFlow();
   }
 
   @Get(':id')
@@ -216,13 +173,67 @@ export class TriageRuleController {
     summary: 'Navegar árvore de triagem (desde a raiz)',
     description: 'Encontra o próximo nó na árvore baseado na resposta fornecida. Começa pela raiz. Não requer autenticação.',
   })
+  @ApiBody({
+    type: TraverseTriageRuleDto,
+    examples: {
+      faturamento: {
+        summary: 'Navegar para branch de faturamento',
+        value: {
+          answerTrigger: 'faturamento',
+        },
+      },
+      suporte: {
+        summary: 'Navegar para branch de suporte técnico',
+        value: {
+          answerTrigger: 'suporte',
+        },
+      },
+      admin: {
+        summary: 'Navegar para branch administrativo',
+        value: {
+          answerTrigger: 'admin',
+        },
+      },
+      compliance: {
+        summary: 'Navegar para branch de compliance',
+        value: {
+          answerTrigger: 'compliance',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore',
+    description: 'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroup)',
+    schema: {
+      example: {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        question: 'Qual é seu problema de faturamento?',
+        answerTrigger: 'faturamento',
+        isLeaf: false,
+        children: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            answerTrigger: 'faturas',
+          },
+          {
+            id: '550e8400-e29b-41d4-a716-446655440002',
+            answerTrigger: 'pagamento',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Nenhuma raiz disponível ou resposta não encontrada',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Resposta não encontrada na raiz da árvore',
+        error: 'Bad Request',
+      },
+    },
   })
   traverse(@Body() dto: TraverseTriageRuleDto) {
     return this.service.traverse(dto.answerTrigger);
@@ -240,13 +251,51 @@ export class TriageRuleController {
     summary: 'Navegar árvore de triagem (desde nó específico)',
     description: 'Encontra o próximo nó na árvore baseado na resposta fornecida, começando a partir de um nó pai específico. Não requer autenticação.',
   })
+  @ApiBody({
+    type: TraverseTriageRuleDto,
+    examples: {
+      folha_suporte1: {
+        summary: 'Selecionar primeiro tipo de suporte',
+        value: {
+          answerTrigger: 'email',
+        },
+      },
+      folha_suporte2: {
+        summary: 'Selecionar segundo tipo de suporte',
+        value: {
+          answerTrigger: 'chat',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore',
+    description: 'Próximo nó da árvore - geralmente uma folha (leaf) com subject de ticket e grupo de suporte',
+    schema: {
+      example: {
+        id: '550e8400-e29b-41d4-a716-446655440005',
+        answerTrigger: 'email',
+        isLeaf: true,
+        subject: {
+          id: '550e8400-e29b-41d4-a716-446655440050',
+          name: 'Suporte por Email',
+          description: 'Contato via email',
+          isActive: true,
+        },
+        targetGroupId: '550e8400-e29b-41d4-a716-446655440100',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Resposta não encontrada sob este nó pai',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Resposta não encontrada sob este nó pai',
+        error: 'Bad Request',
+      },
+    },
   })
   traverseFrom(@Param('id') id: string, @Body() dto: TraverseTriageRuleDto) {
     return this.service.traverse(dto.answerTrigger, id);

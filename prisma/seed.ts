@@ -305,6 +305,36 @@ async function seedTicketSubjects() {
       description:
         'Dúvidas ou problemas com importação em lote, exportação de dados, sincronização e migração.',
     },
+    {
+      name: 'Suporte por Email',
+      description:
+        'Contato e suporte técnico disponível via email com prazo de resposta de 24 horas.',
+    },
+    {
+      name: 'Suporte via Chat',
+      description:
+        'Suporte instantâneo via chat para problemas urgentes e dúvidas rápidas.',
+    },
+    {
+      name: 'Questões de Compliance Fiscal',
+      description:
+        'Perguntas e esclarecimentos sobre obrigatoriedades fiscais e regulamentações.',
+    },
+    {
+      name: 'Proteção de Dados e LGPD',
+      description:
+        'Dúvidas sobre conformidade com Lei Geral de Proteção de Dados (LGPD) e GDPR.',
+    },
+    {
+      name: 'Auditoria e Conformidade',
+      description:
+        'Suporte para processos de auditoria interna e conformidade regulatória.',
+    },
+    {
+      name: 'Segurança e Controle de Acesso',
+      description:
+        'Gestão de segurança, autenticação de dois fatores, e controles de acesso avançados.',
+    },
   ];
 
   for (const subject of subjects) {
@@ -344,7 +374,7 @@ async function seedTriageRules() {
     prisma.supportGroup.findMany(),
   ]);
 
-  if (subjects.length < 8 || supportGroups.length < 3) {
+  if (subjects.length < 16 || supportGroups.length < 4) {
     console.warn(
       'Skipping triage rules seed: not enough subjects or support groups',
     );
@@ -353,8 +383,8 @@ async function seedTriageRules() {
 
   console.log('🌳 Creating triage rules tree...');
 
-  // Root node 1: "Qual é o seu problema?"
-  const root1 = await prisma.triageRule.create({
+  // Root node
+  const root = await prisma.triageRule.create({
     data: {
       id: uuidv7(),
       question: 'Qual é o seu problema?',
@@ -362,186 +392,226 @@ async function seedTriageRules() {
     },
   });
 
-  // Root node 2: "Como posso ajudá-lo?"
-  const root2 = await prisma.triageRule.create({
+  // ========== BRANCH 1: Faturamento ==========
+  const faturamentoBranch = await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      question: 'Como posso ajudá-lo?',
+      parentId: root.id,
+      answerTrigger: 'faturamento',
+      question: 'Qual é o seu problema de faturamento?',
       isLeaf: false,
     },
   });
 
-  // Tree 1: Problemas técnicos
-  const tech_branch = await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: root1.id,
-      answerTrigger: 'problema-tecnico',
-      question: 'Qual é o problema técnico?',
-      isLeaf: false,
-    },
-  });
-
-  // Tech -> NFe issues
+  // Faturamento leaves - 4 children (subjects[0] to subjects[3])
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: tech_branch.id,
-      answerTrigger: 'erro-nfe',
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'faturas-nao-enviadas',
       isLeaf: true,
       subjectId: subjects[0].id,
       targetGroupId: supportGroups[0].id,
     },
   });
 
-  // Tech -> Integration issues
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: tech_branch.id,
-      answerTrigger: 'integracao',
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'duplicacao-faturas',
       isLeaf: true,
       subjectId: subjects[1].id,
-      targetGroupId: supportGroups[4].id,
+      targetGroupId: supportGroups[0].id,
     },
   });
 
-  // Tech -> Performance
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: tech_branch.id,
-      answerTrigger: 'desempenho',
-      isLeaf: true,
-      subjectId: subjects[8].id,
-      targetGroupId: supportGroups[1].id,
-    },
-  });
-
-  // Tech -> Bug report
-  await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: tech_branch.id,
-      answerTrigger: 'bug',
-      isLeaf: true,
-      subjectId: subjects[7].id,
-      targetGroupId: supportGroups[1].id,
-    },
-  });
-
-  // Tree 1: Dúvidas
-  const doubts_branch = await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: root1.id,
-      answerTrigger: 'duvida',
-      question: 'Qual é sua categoria de dúvida?',
-      isLeaf: false,
-    },
-  });
-
-  // Doubts -> Feature question
-  await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: doubts_branch.id,
-      answerTrigger: 'funcionalidade',
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'erro-calculo-valor',
       isLeaf: true,
       subjectId: subjects[2].id,
       targetGroupId: supportGroups[0].id,
     },
   });
 
-  // Doubts -> Access question
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: doubts_branch.id,
-      answerTrigger: 'acesso',
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'consulta-historico',
       isLeaf: true,
       subjectId: subjects[3].id,
       targetGroupId: supportGroups[0].id,
     },
   });
 
-  // Doubts -> Reports
+  // ========== BRANCH 2: Suporte Técnico ==========
+  const suporteBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'suporte',
+      question: 'Qual é o tipo de problema técnico?',
+      isLeaf: false,
+    },
+  });
+
+  // Suporte leaves - 4 children (subjects[4] to subjects[7])
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: doubts_branch.id,
-      answerTrigger: 'relatorios',
+      parentId: suporteBranch.id,
+      answerTrigger: 'erro-nfe',
       isLeaf: true,
       subjectId: subjects[4].id,
-      targetGroupId: supportGroups[0].id,
+      targetGroupId: supportGroups[1].id,
     },
   });
 
-  // Doubts -> Import/Export
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: doubts_branch.id,
-      answerTrigger: 'importacao',
-      isLeaf: true,
-      subjectId: subjects[9].id,
-      targetGroupId: supportGroups[0].id,
-    },
-  });
-
-  // Tree 2: Administrative
-  const admin_branch = await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: root2.id,
-      answerTrigger: 'administrativo',
-      question: 'Qual é sua necessidade administrativa?',
-      isLeaf: false,
-    },
-  });
-
-  // Admin -> Configuration
-  await prisma.triageRule.create({
-    data: {
-      id: uuidv7(),
-      parentId: admin_branch.id,
-      answerTrigger: 'configuracao',
+      parentId: suporteBranch.id,
+      answerTrigger: 'integracao',
       isLeaf: true,
       subjectId: subjects[5].id,
-      targetGroupId: supportGroups[2].id,
+      targetGroupId: supportGroups[1].id,
     },
   });
 
-  // Admin -> Billing
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: admin_branch.id,
-      answerTrigger: 'faturamento',
+      parentId: suporteBranch.id,
+      answerTrigger: 'desempenho',
       isLeaf: true,
       subjectId: subjects[6].id,
-      targetGroupId: supportGroups[2].id,
+      targetGroupId: supportGroups[1].id,
     },
   });
 
-  // Tree 2: Compliance
-  const compliance_branch = await prisma.triageRule.create({
+  await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: root2.id,
-      answerTrigger: 'compliance',
-      question: 'Sobre qual aspecto de compliance você precisa de ajuda?',
+      parentId: suporteBranch.id,
+      answerTrigger: 'bug-report',
+      isLeaf: true,
+      subjectId: subjects[7].id,
+      targetGroupId: supportGroups[1].id,
+    },
+  });
+
+  // ========== BRANCH 3: Administrativo ==========
+  const adminBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'admin',
+      question: 'Qual é a sua necessidade administrativa?',
       isLeaf: false,
     },
   });
 
-  // Compliance -> NFe
+  // Admin leaves - 4 children (subjects[8] to subjects[11])
   await prisma.triageRule.create({
     data: {
       id: uuidv7(),
-      parentId: compliance_branch.id,
-      answerTrigger: 'fiscal',
+      parentId: adminBranch.id,
+      answerTrigger: 'configuracao-sistema',
       isLeaf: true,
+      subjectId: subjects[8].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'gerenciamento-usuarios',
+      isLeaf: true,
+      subjectId: subjects[9].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'relatorios',
+      isLeaf: true,
+      subjectId: subjects[10].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'integracao-erpme',
+      isLeaf: true,
+      subjectId: subjects[11].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  // ========== BRANCH 4: Compliance ==========
+  const complianceBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'compliance',
+      question: 'Qual é o aspecto de compliance que precisa de ajuda?',
+      isLeaf: false,
+    },
+  });
+
+  // Compliance leaves - 4 children (subjects[12] to subjects[15])
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'fiscal-nfe',
+      isLeaf: true,
+      subjectId: subjects[12].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'rgpd-dados',
+      isLeaf: true,
+      subjectId: subjects[13].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'auditoria',
+      isLeaf: true,
+      subjectId: subjects[14].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'seguranca-acesso',
+      isLeaf: true,
+      subjectId: subjects[15].id,
       targetGroupId: supportGroups[3].id,
     },
   });

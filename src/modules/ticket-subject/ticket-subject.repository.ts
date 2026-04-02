@@ -72,4 +72,23 @@ export class TicketSubjectRepository {
     if (excludeId && subject.id === excludeId) return false;
     return true;
   }
+
+  /**
+   * Nullifica subjectId em todas as TriageRules que fazem referência a este subject
+   * Apenas para folhas (isLeaf = true)
+   * @param subjectId ID do subject que será desativado
+   * @returns Quantidade de TriageRules atualizadas
+   */
+  async nullifyTriageRulesSubject(subjectId: string): Promise<number> {
+    const result = await this.prisma.triageRule.updateMany({
+      where: {
+        subjectId: subjectId,
+        isLeaf: true,
+      },
+      data: {
+        subjectId: null,
+      },
+    });
+    return result.count;
+  }
 }

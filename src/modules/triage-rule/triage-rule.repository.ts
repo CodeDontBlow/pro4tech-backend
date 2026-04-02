@@ -236,6 +236,44 @@ export class TriageRuleRepository {
     });
   }
 
+  /**
+   * Deleta uma regra de triagem e todos os seus filhos recursivamente
+   * Usa transação para garantir atomicidade
+   * @param id ID da regra a deletar
+   * @returns Array com IDs das regras deletadas (para logging)
+   */
+  async deleteRecursive(id: string): Promise<string[]> {
+    const deletedIds: string[] = [];
+
+    // Usa transação para garantir atomicidade
+    await this.prisma.$transaction(async (tx) => {
+      // Função auxiliar recursiva para deletar
+      const deleteNode = async (nodeId: string) => {
+        // Busca todos os filhos
+        const children = await tx.triageRule.findMany({
+          where: { parentId: nodeId },
+          select: { id: true },
+        });
+
+        // Deleta filhos recursivamente
+        for (const child of children) {
+          await deleteNode(child.id);
+        }
+
+        // Deleta o nó atual
+        await tx.triageRule.delete({
+          where: { id: nodeId },
+        });
+
+        deletedIds.push(nodeId);
+      };
+
+      await deleteNode(id);
+    });
+
+    return deletedIds;
+  }
+
   async findByAnswerTrigger(answerTrigger: string, parentId: string): Promise<ResponseTriageRuleDto | null> {
     return this.prisma.triageRule.findFirst({
       where: {

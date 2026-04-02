@@ -5,7 +5,6 @@ import { CreateTriageRuleDto } from './dtos/create-triage-rule.dto';
 import { UpdateTriageRuleDto } from './dtos/update-triage-rule.dto';
 import { ResponseTriageRuleDto } from './dtos/response-triage-rule.dto';
 import { TraverseResponseDto } from './dtos/traverse-triage-rule.dto';
-import { ReactFlowTriageRuleDto } from './dtos/react-flow-triage-rule.dto';
 import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
@@ -138,7 +137,18 @@ export class TriageRuleService {
       throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
     }
 
-    await this.repository.delete(id);
+    // Proteção: root node (parentId === null) não pode ser deletado
+    if (!existing.parentId) {
+      throw new BadRequestException(
+        'Root node cannot be deleted. You can only edit it.',
+      );
+    }
+
+    // Delete recursivamente (deleta o nó e todos os filhos)
+    const deletedIds = await this.repository.deleteRecursive(id);
+    this.logger.log(
+      `Triage rules deleted recursively — id: ${id}, totalDeleted: ${deletedIds.length}, deletedIds: ${deletedIds.join(', ')}`,
+    );
   }
 
   async traverse(answerTrigger: string, currentNodeId?: string): Promise<TraverseResponseDto> {
@@ -190,6 +200,7 @@ export class TriageRuleService {
             id: nextNode.subject.id,
             name: nextNode.subject.name,
             description: nextNode.subject.description,
+            isActive: nextNode.subject.isActive,
           }
         : undefined,
       targetGroupId: nextNode.targetGroupId,
@@ -212,87 +223,5 @@ export class TriageRuleService {
 
     return this.wouldCreateCycle(childId, parent.parentId);
   }
-
-  /**
-   * Converte árvore de TriageRule para formato React Flow (nodes + edges)
-   * Usado para frontend renderizar com react-flow-renderer
-   *
-   * @param rules Array de TriageRules (geralmente raízes)
-   * @returns ReactFlowTriageRuleDto com nodes e edges
-   */
-  async toReactFlowFormat(rules: ResponseTriageRuleDto[]): Promise<ReactFlowTriageRuleDto> {
-    const nodes = [];
-    const edges = [];
-    const processedIds = new Set<string>();
-
-    // Auxiliar: processa recursivamente a árvore
-    const flattenTree = (rule: ResponseTriageRuleDto) => {
-      if (processedIds.has(rule.id)) return;
-      processedIds.add(rule.id);
-
-      // Determina tipo de nó
-      let nodeType: 'root' | 'question' | 'leaf' = 'question';
-      if (!rule.parentId) nodeType = 'root';
-      if (rule.isLeaf) nodeType = 'leaf';
-
-      // Cria rótulo para exibição
-      const label = rule.isLeaf
-        ? (rule.subject?.name || 'Ticket Subject')
-        : (rule.question || 'Question Node');
-
-      // Cria dados do nó
-      const nodeData = {
-        id: rule.id,
-        label,
-        question: rule.question,
-        answerTrigger: rule.answerTrigger,
-        isLeaf: rule.isLeaf,
-        parentId: rule.parentId,
-        subjectId: rule.subjectId,
-        targetGroupId: rule.targetGroupId,
-        subject: rule.subject,
-        supportGroup: rule.supportGroup,
-        nodeType,
-        childrenCount: rule.children?.length || 0,
-      };
-
-      // Adiciona nó
-      nodes.push({
-        id: rule.id,
-        data: nodeData,
-        type: 'default',
-      });
-
-      // Processa filhos e cria arestas
-      if (rule.children && rule.children.length > 0) {
-        rule.children.forEach((child) => {
-          // Recursively process child
-          flattenTree(child);
-
-          // Cria aresta do pai para o filho
-          edges.push({
-            id: `${rule.id}->${child.id}`,
-            source: rule.id,
-            target: child.id,
-            label: child.answerTrigger || '',
-            animated: false,
-          });
-        });
-      }
-    };
-
-    // Start flattening from all roots
-    rules.forEach((root) => flattenTree(root));
-
-    return new ReactFlowTriageRuleDto(nodes, edges);
-  }
-
-  /**
-   * findAllReactFlow - Retorna toda árvore em formato React Flow
-   * Query: GET /triage-rules/react-flow
-   */
-  async findAllReactFlow(): Promise<ReactFlowTriageRuleDto> {
-    const roots = await this.findAll();
-    return this.toReactFlowFormat(roots);
-  }
 }
+

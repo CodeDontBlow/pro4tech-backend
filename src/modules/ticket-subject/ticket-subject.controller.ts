@@ -24,7 +24,7 @@ import { CreateTicketSubjectDto } from './dtos/create-ticket-subject.dto';
 import { UpdateTicketSubjectDto } from './dtos/update-ticket-subject.dto';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Public } from '@modules/auth/decorators/public.decorator';
-import { Role } from '@prisma/enums';
+import { Role } from 'generated/prisma/client';
 
 @ApiTags('Ticket Subjects')
 @ApiBearerAuth('bearer')
