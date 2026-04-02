@@ -1,12 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SupportGroupService } from './support-group.service';
 import { CreateSupportGroupDto } from './dtos/create-support-group.dto';
 import { UpdateSupportGroupDto } from './dtos/update-support-group.dto';
+import { AuthGuard } from '../auth/guards/auth.guard'; 
+import { RolesGuard } from '../auth/guards/roles.guard'; 
+import { Roles } from '../auth/decorators/roles.decorator'; 
+import { Role } from '@prisma/client';
 
 @ApiTags('support-group')
 @ApiBearerAuth()
 @Controller('support-groups')
+@UseGuards(AuthGuard, RolesGuard) 
+@Roles(Role.ADMIN, Role.AGENT)
 export class SupportGroupController {
   constructor(private readonly service: SupportGroupService) {}
 
