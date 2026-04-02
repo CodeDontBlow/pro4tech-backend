@@ -1,11 +1,15 @@
 import * as bcrypt from 'bcrypt';
 import {
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { Role } from 'generated/prisma/client';
+import { SupportLevel } from 'generated/prisma/client';
 
 //repositories
 import { UserRepository } from './user.repository';
@@ -15,11 +19,18 @@ import { ResponseUserDto } from './dtos/response-user.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 
+//services
+import { AgentService } from '@modules/agent/agent.service';
+
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    @Inject(forwardRef(() => AgentService))
+    private readonly agentService: AgentService,
+  ) {}
 
   async findByEmail(email: string): Promise<ResponseUserDto | null> {
     const user = await this.userRepository.findByEmail(email);
@@ -71,6 +82,22 @@ export class UserService {
     });
 
     this.logger.log(`User created — id: ${user.id}`);
+
+    // Se o role é AGENT, criar registro na tabela Agent
+    if (user.role === Role.AGENT) {
+      try {
+        await this.agentService.create({
+          userId: user.id,
+          supportLevel: SupportLevel.LEVEL_1,
+          canAnswer: true,
+        });
+        this.logger.log(`Agent created for user — userId: ${user.id}`);
+      } catch (error) {
+        this.logger.error(`Failed to create agent for user ${user.id}`, error);
+        // Não deixar falhar o fluxo todo, apenas logar o erro
+      }
+    }
+
     return user;
   }
 
@@ -102,9 +129,21 @@ export class UserService {
   }
 
   async softDelete(id: string): Promise<ResponseUserDto> {
-    await this.findById(id);
-    const user = await this.userRepository.softDelete(id);
+    const user = await this.findById(id);
+
+    // Se o role é AGENT, soft-delete também na tabela Agent
+    if (user.role === Role.AGENT) {
+      try {
+        await this.agentService.softDelete(id);
+        this.logger.log(`Agent soft-deleted for user — userId: ${id}`);
+      } catch (error) {
+        this.logger.error(`Failed to soft-delete agent for user ${id}`, error);
+        // Log error mas continuar com soft delete do User
+      }
+    }
+
+    const deletedUser = await this.userRepository.softDelete(id);
     this.logger.log(`User soft deleted — id: ${id}`);
-    return user;
+    return deletedUser;
   }
 }

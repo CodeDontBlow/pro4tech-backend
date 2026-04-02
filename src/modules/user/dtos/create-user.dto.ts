@@ -9,7 +9,7 @@ export class CreateUserDto extends BaseUserDto {
     description: 'ID da empresa (UUID)',
     required: true,
   })
-  @IsUUID(4, { message: 'Company ID must be a valid UUID' })
+  @IsUUID(undefined, { message: 'Company ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Company ID is required' })
   companyId: string;
 
