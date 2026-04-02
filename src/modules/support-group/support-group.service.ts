@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { SupportGroupRepository } from './support-group.repository';
 import { CreateSupportGroupDto } from './dtos/create-support-group.dto';
@@ -17,7 +22,7 @@ export class SupportGroupService {
       throw new ConflictException('A group with this name already exists.');
     }
 
-    const id = uuidv7(); 
+    const id = uuidv7();
     return this.repository.create(id, dto);
   }
 
