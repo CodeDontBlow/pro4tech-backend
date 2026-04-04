@@ -201,13 +201,436 @@ async function seedCompanyWithClients(
   return company.id;
 }
 
+async function seedSupportGroups() {
+  const groups = [
+    {
+      name: 'Suporte Técnico L1',
+      description: 'Equipe de suporte técnico nível 1 - atendimento inicial',
+    },
+    {
+      name: 'Suporte Técnico L2',
+      description: 'Equipe de suporte técnico nível 2 - problemas complexos',
+    },
+    {
+      name: 'Suporte Administrativo',
+      description: 'Equipe de suporte para questões administrativas',
+    },
+    {
+      name: 'Equipe Fiscal',
+      description: 'Equipe especializada em questões fiscais e NFe',
+    },
+    {
+      name: 'Suporte a Integração',
+      description: 'Equipe especializada em integração com sistemas terceiros',
+    },
+  ];
+
+  for (const group of groups) {
+    // Check if exists by name
+    const existing = await prisma.supportGroup.findFirst({
+      where: { name: group.name },
+    });
+
+    if (!existing) {
+      await prisma.supportGroup.create({
+        data: {
+          id: uuidv7(),
+          name: group.name,
+          description: group.description,
+        },
+      });
+    } else {
+      // Update if exists
+      await prisma.supportGroup.update({
+        where: { id: existing.id },
+        data: {
+          description: group.description,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Support groups seeded');
+}
+
+async function seedTicketSubjects() {
+  const subjects = [
+    {
+      name: 'Erro na Nota Fiscal',
+      description:
+        'Problemas na geração, validação ou emissão de notas fiscais. Inclui erros de validação, dados inconsistentes e falhas na emissão.',
+    },
+    {
+      name: 'Integração com Sistemas',
+      description:
+        'Problemas de integração com sistemas terceirizados como ERP, WMS, softwares contábeis e outras plataformas.',
+    },
+    {
+      name: 'Dúvida sobre Função',
+      description:
+        'Dúvidas gerais sobre como utilizar recursos e funcionalidades da plataforma. Explicações e tutoriais.',
+    },
+    {
+      name: 'Acesso e Permissões',
+      description:
+        'Problemas com acesso à plataforma, autenticação, recuperação de senha e gerenciamento de permissões de usuário.',
+    },
+    {
+      name: 'Relatórios e Dashboards',
+      description:
+        'Dúvidas ou problemas com geração de relatórios, visualização de dados, dashboards e exportação de informações.',
+    },
+    {
+      name: 'Configuração de Empresa',
+      description:
+        'Necessidade de alterar configurações gerais, dados de empresa, informações fiscais e preferências do sistema.',
+    },
+    {
+      name: 'Cobrança e Faturamento',
+      description:
+        'Dúvidas sobre cobranças, planos, faturamento, notas ou questões relacionadas a billing.',
+    },
+    {
+      name: 'Bug ou Comportamento Inesperado',
+      description:
+        'Relato de erro, bug, crash ou comportamento inesperado da plataforma que prejudica o funcionamento.',
+    },
+    {
+      name: 'Desempenho e Velocidade',
+      description:
+        'Reclamações sobre lentidão, problemas de performance, timeouts ou travamentos da aplicação.',
+    },
+    {
+      name: 'Importação e Exportação de Dados',
+      description:
+        'Dúvidas ou problemas com importação em lote, exportação de dados, sincronização e migração.',
+    },
+    {
+      name: 'Suporte por Email',
+      description:
+        'Contato e suporte técnico disponível via email com prazo de resposta de 24 horas.',
+    },
+    {
+      name: 'Suporte via Chat',
+      description:
+        'Suporte instantâneo via chat para problemas urgentes e dúvidas rápidas.',
+    },
+    {
+      name: 'Questões de Compliance Fiscal',
+      description:
+        'Perguntas e esclarecimentos sobre obrigatoriedades fiscais e regulamentações.',
+    },
+    {
+      name: 'Proteção de Dados e LGPD',
+      description:
+        'Dúvidas sobre conformidade com Lei Geral de Proteção de Dados (LGPD) e GDPR.',
+    },
+    {
+      name: 'Auditoria e Conformidade',
+      description:
+        'Suporte para processos de auditoria interna e conformidade regulatória.',
+    },
+    {
+      name: 'Segurança e Controle de Acesso',
+      description:
+        'Gestão de segurança, autenticação de dois fatores, e controles de acesso avançados.',
+    },
+  ];
+
+  for (const subject of subjects) {
+    // Check if exists by name
+    const existing = await prisma.ticketSubject.findFirst({
+      where: { name: subject.name },
+    });
+
+    if (!existing) {
+      await prisma.ticketSubject.create({
+        data: {
+          id: uuidv7(),
+          name: subject.name,
+          description: subject.description,
+          isActive: true,
+        },
+      });
+    } else {
+      // Update if exists
+      await prisma.ticketSubject.update({
+        where: { id: existing.id },
+        data: {
+          description: subject.description,
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Ticket subjects seeded');
+}
+
+async function seedTriageRules() {
+  // Buscar subjects e groups necessários
+  const [subjects, supportGroups] = await Promise.all([
+    prisma.ticketSubject.findMany(),
+    prisma.supportGroup.findMany(),
+  ]);
+
+  if (subjects.length < 16 || supportGroups.length < 4) {
+    console.warn(
+      'Skipping triage rules seed: not enough subjects or support groups',
+    );
+    return;
+  }
+
+  console.log('🌳 Creating triage rules tree...');
+
+  // Root node
+  const root = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      question: 'Qual é o seu problema?',
+      isLeaf: false,
+    },
+  });
+
+  // ========== BRANCH 1: Faturamento ==========
+  const faturamentoBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'faturamento',
+      question: 'Qual é o seu problema de faturamento?',
+      isLeaf: false,
+    },
+  });
+
+  // Faturamento leaves - 4 children (subjects[0] to subjects[3])
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'faturas-nao-enviadas',
+      isLeaf: true,
+      subjectId: subjects[0].id,
+      targetGroupId: supportGroups[0].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'duplicacao-faturas',
+      isLeaf: true,
+      subjectId: subjects[1].id,
+      targetGroupId: supportGroups[0].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'erro-calculo-valor',
+      isLeaf: true,
+      subjectId: subjects[2].id,
+      targetGroupId: supportGroups[0].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: faturamentoBranch.id,
+      answerTrigger: 'consulta-historico',
+      isLeaf: true,
+      subjectId: subjects[3].id,
+      targetGroupId: supportGroups[0].id,
+    },
+  });
+
+  // ========== BRANCH 2: Suporte Técnico ==========
+  const suporteBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'suporte',
+      question: 'Qual é o tipo de problema técnico?',
+      isLeaf: false,
+    },
+  });
+
+  // Suporte leaves - 4 children (subjects[4] to subjects[7])
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: suporteBranch.id,
+      answerTrigger: 'erro-nfe',
+      isLeaf: true,
+      subjectId: subjects[4].id,
+      targetGroupId: supportGroups[1].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: suporteBranch.id,
+      answerTrigger: 'integracao',
+      isLeaf: true,
+      subjectId: subjects[5].id,
+      targetGroupId: supportGroups[1].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: suporteBranch.id,
+      answerTrigger: 'desempenho',
+      isLeaf: true,
+      subjectId: subjects[6].id,
+      targetGroupId: supportGroups[1].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: suporteBranch.id,
+      answerTrigger: 'bug-report',
+      isLeaf: true,
+      subjectId: subjects[7].id,
+      targetGroupId: supportGroups[1].id,
+    },
+  });
+
+  // ========== BRANCH 3: Administrativo ==========
+  const adminBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'admin',
+      question: 'Qual é a sua necessidade administrativa?',
+      isLeaf: false,
+    },
+  });
+
+  // Admin leaves - 4 children (subjects[8] to subjects[11])
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'configuracao-sistema',
+      isLeaf: true,
+      subjectId: subjects[8].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'gerenciamento-usuarios',
+      isLeaf: true,
+      subjectId: subjects[9].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'relatorios',
+      isLeaf: true,
+      subjectId: subjects[10].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: adminBranch.id,
+      answerTrigger: 'integracao-erpme',
+      isLeaf: true,
+      subjectId: subjects[11].id,
+      targetGroupId: supportGroups[2].id,
+    },
+  });
+
+  // ========== BRANCH 4: Compliance ==========
+  const complianceBranch = await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: root.id,
+      answerTrigger: 'compliance',
+      question: 'Qual é o aspecto de compliance que precisa de ajuda?',
+      isLeaf: false,
+    },
+  });
+
+  // Compliance leaves - 4 children (subjects[12] to subjects[15])
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'fiscal-nfe',
+      isLeaf: true,
+      subjectId: subjects[12].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'rgpd-dados',
+      isLeaf: true,
+      subjectId: subjects[13].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'auditoria',
+      isLeaf: true,
+      subjectId: subjects[14].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  await prisma.triageRule.create({
+    data: {
+      id: uuidv7(),
+      parentId: complianceBranch.id,
+      answerTrigger: 'seguranca-acesso',
+      isLeaf: true,
+      subjectId: subjects[15].id,
+      targetGroupId: supportGroups[3].id,
+    },
+  });
+
+  console.log('✅ Triage rules seeded');
+}
+
 async function main() {
   if (await databaseHasData()) {
+    console.log('🧹 Wiping existing data...');
     await wipeDatabase();
   }
 
+  console.log('🌱 Starting seed...\n');
+
+  console.log('👥 Creating Pro4Tech company and users...');
   await seedPro4Tech();
 
+  console.log('🏢 Creating client companies...');
   await seedCompanyWithClients(
     {
       cnpj: '22.222.222/0001-22',
@@ -277,6 +700,20 @@ async function main() {
       },
     ],
   );
+
+  console.log('👨 Creating support groups...');
+  await seedSupportGroups();
+
+  console.log('🏷️  Creating ticket subjects...');
+  await seedTicketSubjects();
+
+  console.log('🌳 Creating triage rules...');
+  await seedTriageRules();
+
+  console.log('\n✨ Seed completed successfully!');
+  console.log('📊 Test credentials:');
+  console.log('   Email: admin@pro4tech.com');
+  console.log('   Password: password123');
 }
 
 main()

@@ -15,17 +15,8 @@ docker image ls
 # Ver todos os containers em execução
 docker ps -a
 
-# Ver logs do container backend
-docker logs pro4tech_backend
-
-# Acessar o terminal do container
-docker exec -it pro4tech_backend sh
-
 # Listar redes docker
 docker network ls
-
-# Ver detalhes da rede do projeto
-docker network inspect pro4tech_network
 
 # Listar volumes
 docker volume ls
@@ -45,6 +36,9 @@ npx prisma generate
 
 # Criar tabelas
 npx prisma migrate deploy
+
+# Rodar o seed (lembre-se, o seed limpa o banco antes de popular)
+npx prisma db seed
 
 # Abrir Prisma Studio
 npx prisma studio
