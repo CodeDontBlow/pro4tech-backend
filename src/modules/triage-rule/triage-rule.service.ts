@@ -57,7 +57,7 @@ export class TriageRuleService {
       }
 
       // Verifica se o assunto já é utilizado por outra regra de triagem
-      const subjectUsed = await this.prisma.triageRule.findUnique({
+      const subjectUsed = await this.prisma.triageRule.findFirst({
         where: { subjectId: data.subjectId },
         select: { id: true },
       });
@@ -119,7 +119,7 @@ export class TriageRuleService {
       }
 
       // Verifica se o assunto já é utilizado por outra regra de triagem
-      const subjectUsed = await this.prisma.triageRule.findUnique({
+      const subjectUsed = await this.prisma.triageRule.findFirst({
         where: { subjectId: data.subjectId },
         select: { id: true },
       });

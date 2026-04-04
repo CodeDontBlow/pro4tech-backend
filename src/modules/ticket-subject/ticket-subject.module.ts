@@ -8,6 +8,6 @@ import { TicketSubjectRepository } from './ticket-subject.repository';
   imports: [PrismaModule],
   controllers: [TicketSubjectController],
   providers: [TicketSubjectService, TicketSubjectRepository],
-  exports: [TicketSubjectService],
+  exports: [TicketSubjectService, TicketSubjectRepository],
 })
 export class TicketSubjectModule {}
