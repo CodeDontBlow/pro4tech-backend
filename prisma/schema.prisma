@@ -40,6 +40,11 @@ enum TicketAction {
     RETURN
 }
 
+enum SupportLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
 
 
 
@@ -75,6 +80,7 @@ model Company {
     contactEmail    String?         @unique
     accessCode      String          @unique
     isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
     deletedAt       DateTime?
 
@@ -84,7 +90,7 @@ model Company {
 
 model Agent {
     id              String          @id
-    supportLevel    String
+    supportLevel    SupportLevel
     canAnswer       Boolean
 
     user            User            @relation(fields: [id], references: [id])
@@ -168,13 +174,14 @@ model TicketHistory {
 
 model TicketSubject {
     id              String          @id
-    name            String
+    name            String          @unique
     description     String
-    isActive        Boolean
+    isActive        Boolean         @default(true)
     createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt    
 
     tickets         Ticket[]
+    triageRules     TriageRule[]
 }
 
 model TriageRule {
@@ -183,9 +190,11 @@ model TriageRule {
     question        String?
     answerTrigger   String?
     isLeaf          Boolean         @default(false)
-    targetGroupId   String?   
+    targetGroupId   String?
+    subjectId       String?
 
-    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id])
+    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id], onDelete: Cascade)
     children        TriageRule[]    @relation("TriageNode")
     supportGroup    SupportGroup?   @relation(fields: [targetGroupId], references: [id])
+    subject         TicketSubject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 }
