@@ -85,6 +85,18 @@ export class TriageRuleService {
     return rule;
   }
 
+  async findRoot(): Promise<ResponseTriageRuleDto> {
+    const root = await this.prisma.triageRule.findFirst({
+      where: { parentId: null },
+      include: { children: true, subject: true },
+    });
+
+    if (!root) {
+      throw new NotFoundException('Nenhuma regra inicial de triagem encontrada.');
+    }
+    return root as any;
+  }
+  
   async update(id: string, data: UpdateTriageRuleDto): Promise<ResponseTriageRuleDto> {
     // Verifica se existe
     const existing = await this.repository.findById(id);
