@@ -37,10 +37,7 @@ export class AgentRepository {
     });
   }
 
-  async findAll(
-    filters?: FindAllFilters,
-    pagination?: PaginationParams,
-  ) {
+  async findAll(filters?: FindAllFilters, pagination?: PaginationParams) {
     const where: any = {};
 
     if (filters?.supportLevel) {

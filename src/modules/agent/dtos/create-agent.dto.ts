@@ -22,7 +22,9 @@ export class CreateAgentDto extends BaseAgentDto {
     enum: SupportLevel,
     required: true,
   })
-  @IsEnum(SupportLevel, { message: 'SupportLevel must be LEVEL_1, LEVEL_2, or LEVEL_3' })
+  @IsEnum(SupportLevel, {
+    message: 'SupportLevel must be LEVEL_1, LEVEL_2, or LEVEL_3',
+  })
   @IsNotEmpty({ message: 'SupportLevel is required' })
   supportLevel: SupportLevel;
 

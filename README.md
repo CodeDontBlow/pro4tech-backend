@@ -142,32 +142,39 @@ Cada módulo de negócio segue o padrão:
 ### Principais Módulos
 
 #### 🔐 **Auth (Autenticação)**
+
 - Guardiões JWT customizados
 - Decoradores de autenticação
 - Gerenciamento de permissões
 
 #### 👤 **User (Usuários)**
+
 - CRUD completo de usuários
 - Atribuição de papéis (roles)
 
 #### 🤝 **Agent (Agentes/Atendentes)**
+
 - Cadastro de agentes
 - Associação com grupos de suporte
 - Status e disponibilidade
 
 #### 🏢 **Company (Empresas)**
+
 - Gerenciamento de empresas
 - Configurações por empresa
 
 #### 👥 **Support Group (Grupos de Suporte)**
+
 - Organização de agentes em grupos
 - Roteamento de tickets
 
 #### 🏷️ **Ticket Subject (Assuntos de Tickets)**
+
 - Categorização de tickets
 - Gerenciamento de assuntos disponíveis
 
 #### ⚙️ **Triage Rule (Regras de Triagem)**
+
 - Triagem automatizada de tickets
 - Roteamento inteligente para grupos
 - Escalação de prioridades

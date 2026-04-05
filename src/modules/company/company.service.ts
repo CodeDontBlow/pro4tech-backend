@@ -55,6 +55,33 @@ export class CompanyService {
     }
   }
 
+  async findById(id: string): Promise<ResponseCompanyDto | null> {
+    const company = await this.companyRepository.findById(id);
+    if (!company) {
+      this.logger.warn(`Company not found — id: ${id}`);
+      throw new NotFoundException('Company not found');
+    }
+    return company;
+  }
+
+  async findByCnpj(cnpj: string): Promise<ResponseCompanyDto | null> {
+    const company = await this.companyRepository.findByCnpj(cnpj);
+    if (!company) {
+      this.logger.warn(`Company not found — CNPJ: ${cnpj}`);
+      throw new NotFoundException('Company not found');
+    }
+    return company;
+  }
+
+  async findByContactEmail(email: string): Promise<ResponseCompanyDto | null> {
+    const company = await this.companyRepository.findByContactEmail(email);
+    if (!company) {
+      this.logger.warn(`Company not found — contact email: ${email}`);
+      throw new NotFoundException('Company not found');
+    }
+    return company;
+  }
+
   async create(data: CreateCompanyDto): Promise<ResponseCompanyDto> {
     await this.validateCompanyData(data);
 

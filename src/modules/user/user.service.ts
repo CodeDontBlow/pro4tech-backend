@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   forwardRef,
@@ -21,17 +22,22 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 
 //services
 import { AgentService } from '@modules/agent/agent.service';
+import { CompanyService } from '@modules/company/company.service';
+import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly userRepository: UserRepository,
     @Inject(forwardRef(() => AgentService))
     private readonly agentService: AgentService,
+    private readonly companyService: CompanyService,
   ) {}
 
+  // Finders
   async findByEmail(email: string): Promise<ResponseUserDto | null> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
@@ -65,39 +71,39 @@ export class UserService {
     return this.userRepository.findByEmailWithPassword(email);
   }
 
-  async updateLastLogin(id: string): Promise<void> {
-    await this.userRepository.updateLastLogin(id);
-  }
-
+  // CRUD
   async create(data: CreateUserDto): Promise<ResponseUserDto> {
     await this.validateEmailNotInUse(data.email);
-    await this.validatePhoneNotInUse(data.phone);
+    if (data.phone) await this.validatePhoneNotInUse(data.phone);
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const companyId = await this.resolveCompanyId(data);
     const userId = uuidv7();
-    const user = await this.userRepository.create({
-      id: userId,
-      ...data,
-      password: hashedPassword,
-    });
 
-    this.logger.log(`User created — id: ${user.id}`);
-
-    // Se o role é AGENT, criar registro na tabela Agent
-    if (user.role === Role.AGENT) {
-      try {
-        await this.agentService.create({
-          userId: user.id,
-          supportLevel: SupportLevel.LEVEL_1,
-          canAnswer: true,
-        });
-        this.logger.log(`Agent created for user — userId: ${user.id}`);
-      } catch (error) {
-        this.logger.error(`Failed to create agent for user ${user.id}`, error);
-        // Não deixar falhar o fluxo todo, apenas logar o erro
-      }
+    const company = await this.companyService.findById(companyId);
+    if (!company) {
+      throw new NotFoundException(`Company not found — id: ${companyId}`);
     }
 
+    if (data.role === Role.AGENT) {
+      return await this.createUserAgentProfile(
+        data,
+        companyId,
+        hashedPassword,
+        userId,
+      );
+    }
+
+    const user = await this.userRepository.create(
+      {
+        ...data,
+        companyId: companyId,
+        password: hashedPassword,
+      },
+      userId,
+    );
+
+    this.logger.log(`User created successfully — id: ${user.id}`);
     return user;
   }
 
@@ -109,8 +115,27 @@ export class UserService {
     this.logger.log(`User updated — id: ${id}`);
     return user;
   }
+  async updateLastLogin(id: string): Promise<void> {
+    await this.userRepository.updateLastLogin(id);
+  }
 
-  async validateEmailNotInUse(email: string, ignoreUserId?: string) {
+  async softDelete(id: string): Promise<ResponseUserDto> {
+    const user = await this.findById(id);
+    if (user.role === Role.AGENT) {
+      try {
+        await this.agentService.softDelete(id);
+        this.logger.log(`Agent soft-deleted for user — userId: ${id}`);
+      } catch (error) {
+        this.logger.error(`Failed to soft-delete agent for user ${id}`, error);
+      }
+    }
+    const deletedUser = await this.userRepository.softDelete(id);
+    this.logger.log(`User soft deleted — id: ${id}`);
+    return deletedUser;
+  }
+
+  // --- MÉTODOS AUXILIARES (PRIVADOS) ---
+  private async validateEmailNotInUse(email: string, ignoreUserId?: string) {
     if (!email) return;
     const user = await this.userRepository.findByEmail(email);
     if (user && user.id !== ignoreUserId) {
@@ -119,7 +144,7 @@ export class UserService {
     }
   }
 
-  async validatePhoneNotInUse(phone: string, ignoreUserId?: string) {
+  private async validatePhoneNotInUse(phone: string, ignoreUserId?: string) {
     if (!phone) return;
     const user = await this.userRepository.findByPhone(phone);
     if (user && user.id !== ignoreUserId) {
@@ -128,22 +153,47 @@ export class UserService {
     }
   }
 
-  async softDelete(id: string): Promise<ResponseUserDto> {
-    const user = await this.findById(id);
+  private async resolveCompanyId(data: CreateUserDto): Promise<string> {
+    if (data.role !== Role.AGENT) return data.companyId;
 
-    // Se o role é AGENT, soft-delete também na tabela Agent
-    if (user.role === Role.AGENT) {
-      try {
-        await this.agentService.softDelete(id);
-        this.logger.log(`Agent soft-deleted for user — userId: ${id}`);
-      } catch (error) {
-        this.logger.error(`Failed to soft-delete agent for user ${id}`, error);
-        // Log error mas continuar com soft delete do User
-      }
+    const pro4Tech = await this.companyService.findByCnpj('11.111.111/0001-11');
+    if (!pro4Tech) {
+      throw new InternalServerErrorException('Pro4Tech company not found');
     }
+    return pro4Tech.id;
+  }
 
-    const deletedUser = await this.userRepository.softDelete(id);
-    this.logger.log(`User soft deleted — id: ${id}`);
-    return deletedUser;
+  private async createUserAgentProfile(
+    data: CreateUserDto,
+    companyId: string,
+    hashedPassword: string,
+    userId: string,
+  ): Promise<ResponseUserDto> {
+    return await this.prisma.$transaction(async (tx) => {
+      const user = await this.userRepository.create(
+        {
+          companyId,
+          phone: data.phone,
+          email: data.email,
+          password: hashedPassword,
+          name: data.name,
+          role: data.role,
+        },
+        userId,
+        tx,
+      );
+
+      await tx.agent.create({
+        data: {
+          user: {
+            connect: { id: user.id },
+          },
+          supportLevel: SupportLevel.LEVEL_1,
+          canAnswer: true,
+        },
+      });
+      this.logger.log(`Agent and User created successfully — id: ${user.id}`);
+      return user;
+    });
   }
 }

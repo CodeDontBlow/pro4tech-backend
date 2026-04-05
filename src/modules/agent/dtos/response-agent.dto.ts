@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SupportLevel, Role, ChatStatus } from 'generated/prisma/client';
 
 class UserNestedResponseAgentDto {
-
   @ApiProperty({
     example: 'agent@empresa.com',
     description: 'E-mail do agent',

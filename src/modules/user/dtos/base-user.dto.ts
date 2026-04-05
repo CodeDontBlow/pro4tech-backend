@@ -1,3 +1,4 @@
+// base-user.dto.ts
 import {
   IsEmail,
   IsNotEmpty,
@@ -7,57 +8,56 @@ import {
   MaxLength,
   MinLength,
   Matches,
+  IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Role, ChatStatus } from 'generated/prisma/client';
 
 export class BaseUserDto {
-  @ApiPropertyOptional({
-    example: '+5511999999999',
-    description: 'Telefone do usuário -> Formato E.164 (ex: +5511999999999)',
-  })
-  @IsOptional()
-  @IsPhoneNumber(undefined, { message: 'Invalid phone number format' })
-  phone?: string;
+  @ApiProperty({ example: 'Nome do Usuário' })
+  @IsString({ message: 'O nome deve ser uma sequência de caracteres' })
+  @IsNotEmpty({ message: 'O nome é obrigatório' })
+  @MinLength(2, { message: 'O nome deve ter no mínimo 2 caracteres' })
+  @MaxLength(100, { message: 'O nome deve ter no máximo 100 caracteres' })
+  name: string;
 
-  @ApiProperty({
-    example: 'usuario@email.com',
-    description: 'E-mail do usuário',
-    maxLength: 255,
-  })
-  @IsEmail({}, { message: 'Invalid email format' })
-  @IsNotEmpty({ message: 'Email is required' })
-  @MaxLength(255)
+  @ApiProperty({ example: 'usuario@email.com' })
+  @IsEmail({}, { message: 'O e-mail informado é inválido' })
+  @IsNotEmpty({ message: 'O e-mail é obrigatório' })
+  @MaxLength(255, { message: 'O e-mail deve ter no máximo 255 caracteres' })
   email: string;
 
-  @ApiProperty({
-    example: 'Senha@123',
-    description:
-      'Senha do usuário (mínimo 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial)',
-    minLength: 8,
-    maxLength: 100,
+  @ApiProperty({ example: 'Senha@123' })
+  @IsString({ message: 'A senha deve ser uma sequência de caracteres' })
+  @IsNotEmpty({ message: 'A senha é obrigatória' })
+  @MinLength(8, { message: 'A senha deve ter no mínimo 8 caracteres' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/, {
+    message:
+      'A senha deve conter ao menos uma letra maiúscula, uma minúscula, um número e um caractere especial',
   })
-  @IsString()
-  @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(8)
-  @MaxLength(100)
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-    {
-      message:
-        'Password must contain uppercase, lowercase, number and special character',
-    },
-  )
   password: string;
 
-  @ApiProperty({
-    example: 'Nome do Usuário',
-    description: 'Nome do usuário',
-    minLength: 2,
-    maxLength: 100,
+  @ApiPropertyOptional({ example: '+5511999999999' })
+  @IsOptional()
+  @IsPhoneNumber('BR', {
+    message:
+      'O número de telefone deve estar no formato internacional válido (ex: +55...)',
   })
-  @IsString()
-  @IsNotEmpty({ message: 'Name is required' })
-  @MinLength(2)
-  @MaxLength(100)
-  name: string;
+  phone?: string;
+
+  @ApiPropertyOptional({ enum: Role })
+  @IsOptional()
+  @IsEnum(Role, { message: 'O nível de acesso selecionado é inválido' })
+  role?: Role;
+
+  @ApiPropertyOptional({ enum: ChatStatus })
+  @IsOptional()
+  @IsEnum(ChatStatus, { message: 'O status do chat selecionado é inválido' })
+  chatStatus?: ChatStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean({ message: 'O campo ativo deve ser verdadeiro ou falso' })
+  isActive?: boolean;
 }

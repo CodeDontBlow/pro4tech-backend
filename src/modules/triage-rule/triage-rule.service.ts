@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { TriageRuleRepository } from './triage-rule.repository';
 import { CreateTriageRuleDto } from './dtos/create-triage-rule.dto';
@@ -19,19 +24,27 @@ export class TriageRuleService {
   async create(data: CreateTriageRuleDto): Promise<ResponseTriageRuleDto> {
     // Validação: se não for folha, pergunta é obrigatória
     if (!data.isLeaf && !data.question) {
-      throw new BadRequestException('Pergunta é obrigatória quando isLeaf é false');
+      throw new BadRequestException(
+        'Pergunta é obrigatória quando isLeaf é false',
+      );
     }
 
     // Validação: se for folha, answerTrigger deve ser fornecido
     if (data.isLeaf && !data.answerTrigger) {
-      throw new BadRequestException('Resposta disparadora é obrigatória quando isLeaf é true');
+      throw new BadRequestException(
+        'Resposta disparadora é obrigatória quando isLeaf é true',
+      );
     }
 
     // Validação: parentId deve existir se fornecido
     if (data.parentId) {
-      const parentExists = await this.repository.existsWithParentId(data.parentId);
+      const parentExists = await this.repository.existsWithParentId(
+        data.parentId,
+      );
       if (!parentExists) {
-        throw new BadRequestException(`Regra de triagem pai com id ${data.parentId} não encontrada`);
+        throw new BadRequestException(
+          `Regra de triagem pai com id ${data.parentId} não encontrada`,
+        );
       }
     }
 
@@ -42,7 +55,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (!groupExists) {
-        throw new BadRequestException(`Grupo de suporte com id ${data.targetGroupId} não encontrado`);
+        throw new BadRequestException(
+          `Grupo de suporte com id ${data.targetGroupId} não encontrado`,
+        );
       }
     }
 
@@ -53,7 +68,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (!subjectExists) {
-        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} não encontrado`);
+        throw new BadRequestException(
+          `Assunto do tíquete com id ${data.subjectId} não encontrado`,
+        );
       }
 
       // Verifica se o assunto já é utilizado por outra regra de triagem
@@ -62,7 +79,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (subjectUsed) {
-        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`);
+        throw new BadRequestException(
+          `Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`,
+        );
       }
     }
 
@@ -80,21 +99,30 @@ export class TriageRuleService {
   async findById(id: string): Promise<ResponseTriageRuleDto> {
     const rule = await this.repository.findById(id);
     if (!rule) {
-      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
+      throw new NotFoundException(
+        `Regra de triagem com id ${id} não encontrada`,
+      );
     }
     return rule;
   }
 
-  async update(id: string, data: UpdateTriageRuleDto): Promise<ResponseTriageRuleDto> {
+  async update(
+    id: string,
+    data: UpdateTriageRuleDto,
+  ): Promise<ResponseTriageRuleDto> {
     // Verifica se existe
     const existing = await this.repository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
+      throw new NotFoundException(
+        `Regra de triagem com id ${id} não encontrada`,
+      );
     }
 
     // Validação: se não for folha, pergunta é obrigatória (ou já foi fornecida)
     if (data.isLeaf === false && !data.question && !existing.question) {
-      throw new BadRequestException('Pergunta é obrigatória quando isLeaf é false');
+      throw new BadRequestException(
+        'Pergunta é obrigatória quando isLeaf é false',
+      );
     }
 
     // Validação: targetGroupId se fornecido
@@ -104,7 +132,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (!groupExists) {
-        throw new BadRequestException(`Grupo de suporte com id ${data.targetGroupId} não encontrado`);
+        throw new BadRequestException(
+          `Grupo de suporte com id ${data.targetGroupId} não encontrado`,
+        );
       }
     }
 
@@ -115,7 +145,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (!subjectExists) {
-        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} não encontrado`);
+        throw new BadRequestException(
+          `Assunto do tíquete com id ${data.subjectId} não encontrado`,
+        );
       }
 
       // Verifica se o assunto já é utilizado por outra regra de triagem
@@ -124,7 +156,9 @@ export class TriageRuleService {
         select: { id: true },
       });
       if (subjectUsed) {
-        throw new BadRequestException(`Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`);
+        throw new BadRequestException(
+          `Assunto do tíquete com id ${data.subjectId} já está sendo utilizado por outra regra de triagem`,
+        );
       }
     }
 
@@ -134,7 +168,9 @@ export class TriageRuleService {
   async delete(id: string): Promise<void> {
     const existing = await this.repository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Regra de triagem com id ${id} não encontrada`);
+      throw new NotFoundException(
+        `Regra de triagem com id ${id} não encontrada`,
+      );
     }
 
     // Proteção: root node (parentId === null) não pode ser deletado
@@ -151,7 +187,10 @@ export class TriageRuleService {
     );
   }
 
-  async traverse(answerTrigger: string, currentNodeId?: string): Promise<TraverseResponseDto> {
+  async traverse(
+    answerTrigger: string,
+    currentNodeId?: string,
+  ): Promise<TraverseResponseDto> {
     let parentId: string | null = null;
 
     // Se nenhum nó atual fornecido, começar pela raiz
@@ -164,7 +203,9 @@ export class TriageRuleService {
       });
 
       if (roots.length === 0) {
-        throw new BadRequestException('Nenhuma regra de triagem raiz encontrada');
+        throw new BadRequestException(
+          'Nenhuma regra de triagem raiz encontrada',
+        );
       }
 
       parentId = roots[0].id;
@@ -173,7 +214,10 @@ export class TriageRuleService {
     }
 
     // Encontra filho com resposta disparadora correspondente
-    const nextNode = await this.repository.findByAnswerTrigger(answerTrigger, parentId);
+    const nextNode = await this.repository.findByAnswerTrigger(
+      answerTrigger,
+      parentId,
+    );
 
     if (!nextNode) {
       throw new BadRequestException(
@@ -207,7 +251,10 @@ export class TriageRuleService {
     };
   }
 
-  private async wouldCreateCycle(childId: string, targetParentId: string): Promise<boolean> {
+  private async wouldCreateCycle(
+    childId: string,
+    targetParentId: string,
+  ): Promise<boolean> {
     if (childId === targetParentId) {
       return true;
     }
@@ -224,4 +271,3 @@ export class TriageRuleService {
     return this.wouldCreateCycle(childId, parent.parentId);
   }
 }
-

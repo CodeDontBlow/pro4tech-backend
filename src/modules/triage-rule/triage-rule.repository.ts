@@ -199,7 +199,10 @@ export class TriageRuleRepository {
     });
   }
 
-  async update(id: string, data: UpdateTriageRuleDto): Promise<ResponseTriageRuleDto> {
+  async update(
+    id: string,
+    data: UpdateTriageRuleDto,
+  ): Promise<ResponseTriageRuleDto> {
     return this.prisma.triageRule.update({
       where: { id },
       data: {
@@ -274,7 +277,10 @@ export class TriageRuleRepository {
     return deletedIds;
   }
 
-  async findByAnswerTrigger(answerTrigger: string, parentId: string): Promise<ResponseTriageRuleDto | null> {
+  async findByAnswerTrigger(
+    answerTrigger: string,
+    parentId: string,
+  ): Promise<ResponseTriageRuleDto | null> {
     return this.prisma.triageRule.findFirst({
       where: {
         answerTrigger,

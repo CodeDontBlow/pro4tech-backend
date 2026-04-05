@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
 
 //services
 import { PrismaService } from 'src/database/prisma/prisma.service';
@@ -25,6 +26,7 @@ const userPublicSelect = {
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  //finders
   async findById(id: string): Promise<ResponseUserDto | null> {
     return this.prisma.user.findUnique({
       where: { id: id, deletedAt: null },
@@ -64,10 +66,16 @@ export class UserRepository {
     });
   }
 
-  async create(data: CreateUserDto & { id: string }): Promise<ResponseUserDto> {
-    return this.prisma.user.create({
+  // crud
+  async create(
+    data: CreateUserDto,
+    id: string,
+    tx?: any,
+  ): Promise<ResponseUserDto> {
+    const prisma = tx || this.prisma;
+    return prisma.user.create({
       data: {
-        id: data.id,
+        id: id,
         companyId: data.companyId,
         phone: data.phone,
         email: data.email,

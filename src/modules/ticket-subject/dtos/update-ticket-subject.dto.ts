@@ -14,7 +14,8 @@ export class UpdateTicketSubjectDto {
 
   @ApiPropertyOptional({
     description: 'Descrição do assunto',
-    example: 'Problemas relacionados à geração, validação e emissão de notas fiscais',
+    example:
+      'Problemas relacionados à geração, validação e emissão de notas fiscais',
     minLength: 3,
     maxLength: 500,
   })

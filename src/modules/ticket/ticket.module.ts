@@ -12,4 +12,3 @@ import { TicketSubjectModule } from '../ticket-subject/ticket-subject.module';
   exports: [TicketService],
 })
 export class TicketModule {}
-

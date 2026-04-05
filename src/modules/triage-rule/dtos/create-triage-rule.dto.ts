@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsNotEmpty, ValidateIf } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNotEmpty,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTriageRuleDto {
@@ -22,7 +28,8 @@ export class CreateTriageRuleDto {
   question?: string;
 
   @ApiPropertyOptional({
-    description: 'Resposta/trigger que dispara esta regra (ex: "sim", "erro-nota")',
+    description:
+      'Resposta/trigger que dispara esta regra (ex: "sim", "erro-nota")',
     example: 'Faturamento',
     maxLength: 100,
   })

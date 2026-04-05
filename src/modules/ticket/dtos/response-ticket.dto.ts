@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TicketStatus, TicketPriority } from '../../../../generated/prisma/enums';
+import {
+  TicketStatus,
+  TicketPriority,
+} from '../../../../generated/prisma/enums';
 
 export class ResponseTicketDto {
   @ApiProperty({
