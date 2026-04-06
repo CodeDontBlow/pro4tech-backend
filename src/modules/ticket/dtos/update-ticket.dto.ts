@@ -1,12 +1,9 @@
-import {
-  IsOptional,
-  IsEnum,
-  IsNumber,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsOptional, IsEnum, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { TicketStatus, TicketPriority } from '../../../../generated/prisma/enums';
+import {
+  TicketStatus,
+  TicketPriority,
+} from '../../../../generated/prisma/enums';
 
 export class UpdateTicketDto {
   @ApiProperty({

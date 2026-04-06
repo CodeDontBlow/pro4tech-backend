@@ -5,11 +5,11 @@ import { CompanyController } from './company.controller';
 
 //modules
 import { AccessCodeModule } from '@modules/accessCode/access-code.module';
-import { UserModule } from '@modules/user/user.module';
 
 @Module({
-  imports: [AccessCodeModule, UserModule],
+  imports: [AccessCodeModule],
   controllers: [CompanyController],
   providers: [CompanyService, CompanyRepository],
+  exports: [CompanyService],
 })
 export class CompanyModule {}

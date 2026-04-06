@@ -2,8 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
-  Delete,
   Body,
   Param,
   HttpCode,
@@ -18,8 +16,10 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { TriageRuleService } from './triage-rule.service';
-import { CreateTriageRuleDto } from './dtos/create-triage-rule.dto';
-import { UpdateTriageRuleDto } from './dtos/update-triage-rule.dto';
+import {
+  SyncTriageRuleNodeDto,
+  SyncTriageRuleResponseDto,
+} from './dtos/sync-triage-rule.dto';
 import { TraverseTriageRuleDto } from './dtos/traverse-triage-rule.dto';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Public } from '@modules/auth/decorators/public.decorator';
@@ -35,7 +35,8 @@ export class TriageRuleController {
   @Roles(Role.ADMIN)
   @ApiOperation({
     summary: 'Listar todas as regras de triagem',
-    description: 'Retorna um lista hierárquica de todas as regras de triagem. Requer autenticação ADMIN.',
+    description:
+      'Retorna um lista hierárquica de todas as regras de triagem. Requer autenticação ADMIN.',
   })
   @ApiResponse({
     status: 200,
@@ -49,128 +50,71 @@ export class TriageRuleController {
     return this.service.findAll();
   }
 
-  @Get('root')
+@Get('root')
   @Public()
   @ApiOperation({ summary: 'Obter a pergunta inicial da triagem (Dinâmico)' })
   findRoot() {
     return this.service.findRoot();
   }
 
-  @Get(':id')
+  @Post('sync')
+  
   @Roles(Role.ADMIN)
-  @ApiParam({
-    name: 'id',
-    description: 'ID da regra de triagem',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Obter regra de triagem por ID',
-    description: 'Retorna uma regra de triagem específica com seus filhos. Requer autenticação ADMIN.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Regra de triagem obtida com sucesso',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Regra de triagem não encontrada',
-  })
-  findById(@Param('id') id: string) {
-    return this.service.findById(id);
-  }
-
-  @Post()
-  @Roles(Role.ADMIN)
-  @ApiOperation({
-    summary: 'Criar nova regra de triagem',
-    description: 'Cria uma nova regra de triagem (raiz, intermediária ou folha). Requer autenticação ADMIN.',
+    summary: 'Sincronizar diagrama completo de triagem',
+    description:
+      'Recebe o diagrama completo de triagem (root + árvore de children) e aplica criação, atualização e remoção em uma transação única.',
   })
   @ApiBody({
-    type: CreateTriageRuleDto,
-    description: 'Dados para criar a regra de triagem',
+    type: SyncTriageRuleNodeDto,
+    description: 'Root do diagrama completo para sincronização',
     examples: {
       root: {
+        summary: 'Payload do diagrama (targetGroupId)',
         value: {
+          id: 'front-root-id',
+          parentId: null,
           question: 'Qual é o seu problema?',
           isLeaf: false,
-        },
-      },
-      intermediate: {
-        value: {
-          parentId: 'parent-id',
-          question: 'É sobre faturamento?',
-          answerTrigger: 'sim',
-          isLeaf: false,
-        },
-      },
-      leaf: {
-        value: {
-          parentId: 'parent-id',
-          answerTrigger: 'erro-na-nota',
-          isLeaf: true,
-          subjectId: 'subject-id',
-          targetGroupId: 'group-id',
+          answerTrigger: null,
+          targetGroupId: null,
+          subjectId: null,
+          children: [
+            {
+              id: 'front-leaf-id',
+              parentId: 'front-root-id',
+              question: null,
+              answerTrigger: 'faturamento',
+              isLeaf: true,
+              targetGroupId: 'group-id',
+              subjectId: 'subject-id',
+              children: [],
+            },
+          ],
         },
       },
     },
   })
   @ApiResponse({
-    status: 201,
-    description: 'Regra de triagem criada com sucesso',
+    status: 200,
+    description: 'Sincronização concluída com sucesso',
+    type: SyncTriageRuleResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Erro de validação (ex: pergunta obrigatória para não-folha)',
-  })
-  create(@Body() dto: CreateTriageRuleDto) {
-    return this.service.create(dto);
-  }
-
-  @Patch(':id')
-  @Roles(Role.ADMIN)
-  @ApiParam({
-    name: 'id',
-    description: 'ID da regra de triagem a atualizar',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @ApiOperation({
-    summary: 'Atualizar regra de triagem',
-    description: 'Atualiza campos de uma regra de triagem existente. Requer autenticação ADMIN.',
+    description: 'Erro de validação do diagrama',
   })
   @ApiResponse({
-    status: 200,
-    description: 'Regra de triagem atualizada com sucesso',
+    status: 401,
+    description: 'Token não fornecido ou inválido',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Regra de triagem não encontrada',
+    status: 403,
+    description: 'Usuário sem permissão para sincronizar regras de triagem',
   })
-  update(@Param('id') id: string, @Body() dto: UpdateTriageRuleDto) {
-    return this.service.update(id, dto);
-  }
-
-  @Delete(':id')
-  @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiParam({
-    name: 'id',
-    description: 'ID da regra de triagem a deletar',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @ApiOperation({
-    summary: 'Deletar regra de triagem',
-    description: 'Deleta uma regra de triagem. Requer autenticação ADMIN.',
-  })
-  @ApiResponse({
-    status: 204,
-    description: 'Regra de triagem deletada com sucesso',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Regra de triagem não encontrada',
-  })
-  delete(@Param('id') id: string) {
-    return this.service.delete(id);
+  sync(@Body() dto: SyncTriageRuleNodeDto) {
+    return this.service.syncDiagram(dto);
   }
 
   @Post('traverse')
@@ -178,7 +122,8 @@ export class TriageRuleController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Navegar árvore de triagem (desde a raiz)',
-    description: 'Encontra o próximo nó na árvore baseado na resposta fornecida. Começa pela raiz. Não requer autenticação.',
+    description:
+      'Encontra o próximo nó na árvore baseado na resposta fornecida. Começa pela raiz. Não requer autenticação.',
   })
   @ApiBody({
     type: TraverseTriageRuleDto,
@@ -211,7 +156,8 @@ export class TriageRuleController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroup)',
+    description:
+      'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroup)',
     schema: {
       example: {
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -256,7 +202,8 @@ export class TriageRuleController {
   })
   @ApiOperation({
     summary: 'Navegar árvore de triagem (desde nó específico)',
-    description: 'Encontra o próximo nó na árvore baseado na resposta fornecida, começando a partir de um nó pai específico. Não requer autenticação.',
+    description:
+      'Encontra o próximo nó na árvore baseado na resposta fornecida, começando a partir de um nó pai específico. Não requer autenticação.',
   })
   @ApiBody({
     type: TraverseTriageRuleDto,
@@ -277,7 +224,8 @@ export class TriageRuleController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore - geralmente uma folha (leaf) com subject de ticket e grupo de suporte',
+    description:
+      'Próximo nó da árvore - geralmente uma folha (leaf) com subject de ticket e grupo de suporte',
     schema: {
       example: {
         id: '550e8400-e29b-41d4-a716-446655440005',

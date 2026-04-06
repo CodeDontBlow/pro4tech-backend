@@ -12,9 +12,9 @@ import { AgentService } from './agent.service';
 import { UpdateAgentDto } from './dtos/update-agent.dto';
 import { SupportLevel } from 'generated/prisma/client';
 
-@ApiTags('agents')
+@ApiTags('agent')
 @ApiBearerAuth()
-@Controller('agents')
+@Controller('agent')
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 
@@ -66,8 +66,14 @@ export class AgentController {
     return this.agentService.findAll(
       {
         supportLevel,
-        canAnswer: canAnswer === 'true' ? true : canAnswer === 'false' ? false : undefined,
-        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+        canAnswer:
+          canAnswer === 'true'
+            ? true
+            : canAnswer === 'false'
+              ? false
+              : undefined,
+        isActive:
+          isActive === 'true' ? true : isActive === 'false' ? false : undefined,
       },
       {
         page: page ? Number(page) : 1,

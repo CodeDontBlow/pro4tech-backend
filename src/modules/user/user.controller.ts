@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 //decorators
 import {
@@ -13,6 +21,8 @@ import { UserService } from './user.service';
 //dtos
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { Role } from 'generated/prisma/client';
+import { Roles } from '@modules/auth/decorators/roles.decorator';
 
 //swagger
 @ApiTags('user')
@@ -26,19 +36,25 @@ export class UserController {
     return this.userService.findById(user.sub);
   }
 
-  @Public()
-  @Post('register')
-  create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
-  }
-
   @Patch('me')
-  update(@AuthUser() user: UserPayload, @Body() dto: UpdateUserDto) {
+  updateMe(@AuthUser() user: UserPayload, @Body() dto: UpdateUserDto) {
     return this.userService.update(user.sub, dto);
   }
 
   @Delete('me')
-  delete(@AuthUser() user: UserPayload) {
+  deleteMe(@AuthUser() user: UserPayload) {
     return this.userService.softDelete(user.sub);
+  }
+
+  @Public()
+  @Post()
+  create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  delete(@Param('id') id: string) {
+    return this.userService.softDelete(id);
   }
 }

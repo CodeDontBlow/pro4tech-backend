@@ -3,6 +3,8 @@ import { v7 as uuidv7 } from 'uuid';
 
 //services
 import { PrismaService } from 'src/database/prisma/prisma.service';
+
+//dtos
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { ResponseCompanyDto } from './dtos/response-company.dto';

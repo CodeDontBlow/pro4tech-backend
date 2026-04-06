@@ -129,7 +129,8 @@ export class TicketService {
    * Private: Validate supportGroup exists and is active
    */
   private async validateSupportGroup(supportGroupId: string): Promise<void> {
-    const supportGroup = await this.supportGroupRepository.findById(supportGroupId);
+    const supportGroup =
+      await this.supportGroupRepository.findById(supportGroupId);
     if (!supportGroup) {
       throw new NotFoundException(`Support Group ${supportGroupId} not found`);
     }
@@ -176,4 +177,3 @@ export class TicketService {
     }
   }
 }
-

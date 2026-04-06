@@ -1,24 +1,19 @@
-import { IsNotEmpty, IsUUID, IsEnum } from 'class-validator';
+import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
+import { IsOptional, IsUUID } from 'class-validator';
 import { BaseUserDto } from './base-user.dto';
-import { Role } from 'generated/prisma/client';
-import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateUserDto extends BaseUserDto {
-  @ApiProperty({
+export class AdditionalCreateFields {
+  @ApiPropertyOptional({
+    description:
+      'ID da empresa (Obrigatório para Clientes, automático para Atendentes)',
     example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
-    description: 'ID da empresa (UUID)',
-    required: true,
   })
-  @IsUUID(undefined, { message: 'Company ID must be a valid UUID' })
-  @IsNotEmpty({ message: 'Company ID is required' })
-  companyId: string;
-
-  @ApiProperty({
-    example: 'CLIENT',
-    description: 'Papel do usuário (CLIENT, AGENT ou ADMIN)',
-    required: false,
-    enum: Role,
-  })
-  @IsEnum(Role, { message: 'Role must be CLIENT, AGENT, or ADMIN' })
-  role?: Role;
+  @IsUUID('7', { message: 'O ID da empresa deve ser um código UUID válido' })
+  @IsOptional()
+  companyId?: string;
 }
+
+export class CreateUserDto extends IntersectionType(
+  BaseUserDto,
+  AdditionalCreateFields,
+) {}
