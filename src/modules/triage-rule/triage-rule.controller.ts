@@ -50,7 +50,15 @@ export class TriageRuleController {
     return this.service.findAll();
   }
 
+@Get('root')
+  @Public()
+  @ApiOperation({ summary: 'Obter a pergunta inicial da triagem (Dinâmico)' })
+  findRoot() {
+    return this.service.findRoot();
+  }
+
   @Post('sync')
+  
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

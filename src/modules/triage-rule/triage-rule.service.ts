@@ -41,6 +41,16 @@ export class TriageRuleService {
     return this.repository.findAll();
   }
 
+async findRoot(): Promise<ResponseTriageRuleDto> {
+    const roots = await this.repository.findAll();
+    
+    if (!roots || roots.length === 0) {
+      throw new BadRequestException('Nenhuma regra de triagem inicial encontrada.');
+    }
+
+    return roots[0];
+  }
+
   async syncDiagram(root: SyncTriageRuleNodeDto): Promise<SyncTriageRuleResponseDto> {
     const normalizedNodes = this.normalizeAndFlattenTree(root);
     this.validateBusinessRules(normalizedNodes);
