@@ -36,12 +36,14 @@ export class TicketSubjectController {
   @Public()
   @ApiOperation({
     summary: 'Listar assuntos de tíquetes',
-    description: 'Retorna a lista de assuntos de tíquetes disponíveis. Endpoint público - não requer autenticação.',
+    description:
+      'Retorna a lista de assuntos de tíquetes disponíveis. Endpoint público - não requer autenticação.',
   })
   @ApiQuery({
     name: 'includeInactive',
     required: false,
-    description: 'Se \'true\', retorna também assuntos inativos. Padrão: \'false\' (apenas ativos)',
+    description:
+      "Se 'true', retorna também assuntos inativos. Padrão: 'false' (apenas ativos)",
     example: false,
   })
   @ApiResponse({
@@ -62,7 +64,8 @@ export class TicketSubjectController {
   })
   @ApiOperation({
     summary: 'Obter assunto de tíquete por ID',
-    description: 'Retorna um assunto de tíquete específico. Endpoint público - não requer autenticação.',
+    description:
+      'Retorna um assunto de tíquete específico. Endpoint público - não requer autenticação.',
   })
   @ApiResponse({
     status: 200,
@@ -107,7 +110,8 @@ export class TicketSubjectController {
   })
   @ApiOperation({
     summary: 'Atualizar assunto de tíquete',
-    description: 'Atualiza um assunto de tíquete existente. Requer autenticação ADMIN.',
+    description:
+      'Atualiza um assunto de tíquete existente. Requer autenticação ADMIN.',
   })
   @ApiResponse({
     status: 200,

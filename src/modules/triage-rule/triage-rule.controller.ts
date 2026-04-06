@@ -35,7 +35,8 @@ export class TriageRuleController {
   @Roles(Role.ADMIN)
   @ApiOperation({
     summary: 'Listar todas as regras de triagem',
-    description: 'Retorna um lista hierárquica de todas as regras de triagem. Requer autenticação ADMIN.',
+    description:
+      'Retorna um lista hierárquica de todas as regras de triagem. Requer autenticação ADMIN.',
   })
   @ApiResponse({
     status: 200,
@@ -113,7 +114,8 @@ export class TriageRuleController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Navegar árvore de triagem (desde a raiz)',
-    description: 'Encontra o próximo nó na árvore baseado na resposta fornecida. Começa pela raiz. Não requer autenticação.',
+    description:
+      'Encontra o próximo nó na árvore baseado na resposta fornecida. Começa pela raiz. Não requer autenticação.',
   })
   @ApiBody({
     type: TraverseTriageRuleDto,
@@ -146,7 +148,8 @@ export class TriageRuleController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroupId)',
+    description:
+      'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroup)',
     schema: {
       example: {
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -191,7 +194,8 @@ export class TriageRuleController {
   })
   @ApiOperation({
     summary: 'Navegar árvore de triagem (desde nó específico)',
-    description: 'Encontra o próximo nó na árvore baseado na resposta fornecida, começando a partir de um nó pai específico. Não requer autenticação.',
+    description:
+      'Encontra o próximo nó na árvore baseado na resposta fornecida, começando a partir de um nó pai específico. Não requer autenticação.',
   })
   @ApiBody({
     type: TraverseTriageRuleDto,
@@ -212,7 +216,8 @@ export class TriageRuleController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Próximo nó da árvore - geralmente uma folha (leaf) com subject de ticket e grupo de suporte',
+    description:
+      'Próximo nó da árvore - geralmente uma folha (leaf) com subject de ticket e grupo de suporte',
     schema: {
       example: {
         id: '550e8400-e29b-41d4-a716-446655440005',

@@ -8,12 +8,20 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
 import { ResponseTicketDto } from './dtos/response-ticket.dto';
-import { AuthUser, UserPayload } from 'src/common/decorators/auth-user.decorator';
+import {
+  AuthUser,
+  UserPayload,
+} from 'src/common/decorators/auth-user.decorator';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Role } from 'generated/prisma/client';
 
@@ -36,9 +44,7 @@ export class TicketController {
     description: 'Ticket created successfully',
     type: ResponseTicketDto,
   })
-  async create(
-    @Body() dto: CreateTicketDto,
-  ): Promise<ResponseTicketDto> {
+  async create(@Body() dto: CreateTicketDto): Promise<ResponseTicketDto> {
     return this.ticketService.createTicket(dto);
   }
 
@@ -95,8 +101,14 @@ export class TicketController {
     description: 'Ticket updated successfully',
     type: ResponseTicketDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid status transition or immutable field change' })
-  @ApiResponse({ status: 403, description: 'Only assigned agent can close ticket' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid status transition or immutable field change',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Only assigned agent can close ticket',
+  })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
   async update(
     @Param('id') ticketId: string,

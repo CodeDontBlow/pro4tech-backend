@@ -9,7 +9,9 @@ import { v7 as uuidv7 } from 'uuid';
 export class TicketSubjectRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateTicketSubjectDto): Promise<ResponseTicketSubjectDto> {
+  async create(
+    data: CreateTicketSubjectDto,
+  ): Promise<ResponseTicketSubjectDto> {
     return this.prisma.ticketSubject.create({
       data: {
         id: uuidv7(),
@@ -20,7 +22,9 @@ export class TicketSubjectRepository {
     });
   }
 
-  async findAll(onlyActive: boolean = true): Promise<ResponseTicketSubjectDto[]> {
+  async findAll(
+    onlyActive: boolean = true,
+  ): Promise<ResponseTicketSubjectDto[]> {
     return this.prisma.ticketSubject.findMany({
       where: onlyActive ? { isActive: true } : {},
     });
@@ -38,7 +42,10 @@ export class TicketSubjectRepository {
     });
   }
 
-  async update(id: string, data: UpdateTicketSubjectDto): Promise<ResponseTicketSubjectDto> {
+  async update(
+    id: string,
+    data: UpdateTicketSubjectDto,
+  ): Promise<ResponseTicketSubjectDto> {
     return this.prisma.ticketSubject.update({
       where: { id },
       data: {

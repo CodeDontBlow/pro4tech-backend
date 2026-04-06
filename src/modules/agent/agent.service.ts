@@ -33,14 +33,11 @@ export class AgentService {
     return this.mapToResponseDto(agent);
   }
 
-  async findAll(
-    filters?: FindAllFilters,
-    pagination?: PaginationParams,
-  ) {
+  async findAll(filters?: FindAllFilters, pagination?: PaginationParams) {
     const result = await this.agentRepository.findAll(filters, pagination);
 
     return {
-      agents: result.agents.map(agent => this.mapToResponseDto(agent)),
+      agents: result.agents.map((agent) => this.mapToResponseDto(agent)),
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -50,15 +47,23 @@ export class AgentService {
   async create(createAgentDto: CreateAgentDto): Promise<ResponseAgentDto> {
     try {
       const agent = await this.agentRepository.create(createAgentDto);
-      this.logger.log(`Agent created — id: ${agent.id}, supportLevel: ${agent.supportLevel}`);
+      this.logger.log(
+        `Agent created — id: ${agent.id}, supportLevel: ${agent.supportLevel}`,
+      );
       return this.mapToResponseDto(agent);
     } catch (error) {
-      this.logger.error(`Failed to create agent for user ${createAgentDto.userId}`, error);
+      this.logger.error(
+        `Failed to create agent for user ${createAgentDto.userId}`,
+        error,
+      );
       throw error;
     }
   }
 
-  async update(agentId: string, updateAgentDto: UpdateAgentDto): Promise<ResponseAgentDto> {
+  async update(
+    agentId: string,
+    updateAgentDto: UpdateAgentDto,
+  ): Promise<ResponseAgentDto> {
     // Verificar se existe antes de atualizar
     await this.findById(agentId);
 

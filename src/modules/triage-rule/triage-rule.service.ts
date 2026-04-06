@@ -148,7 +148,10 @@ export class TriageRuleService {
     };
   }
 
-  async traverse(answerTrigger: string, currentNodeId?: string): Promise<TraverseResponseDto> {
+  async traverse(
+    answerTrigger: string,
+    currentNodeId?: string,
+  ): Promise<TraverseResponseDto> {
     let parentId: string | null = null;
 
     // Se nenhum nó atual fornecido, começar pela raiz
@@ -161,7 +164,9 @@ export class TriageRuleService {
       });
 
       if (roots.length === 0) {
-        throw new BadRequestException('Nenhuma regra de triagem raiz encontrada');
+        throw new BadRequestException(
+          'Nenhuma regra de triagem raiz encontrada',
+        );
       }
 
       parentId = roots[0].id;
@@ -170,7 +175,10 @@ export class TriageRuleService {
     }
 
     // Encontra filho com resposta disparadora correspondente
-    const nextNode = await this.repository.findByAnswerTrigger(answerTrigger, parentId);
+    const nextNode = await this.repository.findByAnswerTrigger(
+      answerTrigger,
+      parentId,
+    );
 
     if (!nextNode) {
       throw new BadRequestException(
@@ -444,4 +452,3 @@ export class TriageRuleService {
     return normalized.length > 0 ? normalized : null;
   }
 }
-
