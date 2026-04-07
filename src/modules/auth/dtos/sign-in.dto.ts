@@ -12,7 +12,7 @@ export class SignInDto {
   email: string;
 
   @ApiProperty({
-    example: 'password123',
+    example: 'Password@123',
     description: 'Senha do usuário',
     required: true,
     maxLength: 100,
