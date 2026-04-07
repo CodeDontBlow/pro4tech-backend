@@ -157,7 +157,7 @@ export class TriageRuleController {
   @ApiResponse({
     status: 200,
     description:
-      'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject e targetGroup)',
+      'Próximo nó da árvore - pode ser um nó intermediário (com filhos) ou uma folha (com subject, targetGroupId e supportGroup)',
     schema: {
       example: {
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -238,6 +238,11 @@ export class TriageRuleController {
           isActive: true,
         },
         targetGroupId: '550e8400-e29b-41d4-a716-446655440100',
+        supportGroup: {
+          id: '550e8400-e29b-41d4-a716-446655440100',
+          name: 'Suporte Nível 1',
+          description: 'Equipe de atendimento inicial',
+        },
       },
     },
   })

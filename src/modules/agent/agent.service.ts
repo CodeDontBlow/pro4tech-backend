@@ -91,6 +91,8 @@ export class AgentService {
   }
 
   private mapToResponseDto(agent: any): ResponseAgentDto {
+    const primarySupportGroup = agent.agentGroups?.[0]?.supportGroup;
+
     return {
       id: agent.id,
       supportLevel: agent.supportLevel,
@@ -106,6 +108,16 @@ export class AgentService {
         createdAt: agent.user.createdAt,
         updatedAt: agent.user.updatedAt,
       },
+      supportGroup: primarySupportGroup
+        ? {
+            id: primarySupportGroup.id,
+            name: primarySupportGroup.name,
+            description: primarySupportGroup.description,
+            isActive: primarySupportGroup.isActive,
+            createdAt: primarySupportGroup.createdAt,
+            updatedAt: primarySupportGroup.updatedAt,
+          }
+        : undefined,
       createdAt: agent.createdAt,
       updatedAt: agent.updatedAt,
     };

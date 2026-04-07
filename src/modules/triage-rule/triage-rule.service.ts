@@ -219,6 +219,13 @@ async findRoot(): Promise<ResponseTriageRuleDto> {
           }
         : undefined,
       targetGroupId: nextNode.targetGroupId,
+      supportGroup: nextNode.supportGroup
+        ? {
+            id: nextNode.supportGroup.id,
+            name: nextNode.supportGroup.name,
+            description: nextNode.supportGroup.description,
+          }
+        : undefined,
     };
   }
 
