@@ -1,4 +1,10 @@
-## Comandos Local
+### Api
+
+```bash
+# Iniciar API
+npm run start:dev
+```
+
 ### Docker
 
 ```bash
@@ -9,17 +15,8 @@ docker image ls
 # Ver todos os containers em execução
 docker ps -a
 
-# Ver logs do container backend
-docker logs pro4tech_backend
-
-# Acessar o terminal do container
-docker exec -it pro4tech_backend sh
-
 # Listar redes docker
 docker network ls
-
-# Ver detalhes da rede do projeto
-docker network inspect pro4tech_network
 
 # Listar volumes
 docker volume ls
@@ -27,28 +24,21 @@ docker volume ls
 # Ver detalhes do volume do PostgreSQL
 docker volume inspect pro4tech_postgres_data
 
-# Visualizar logs em tempo real
-docker logs -f pro4tech_backend
-
 # Ver últimas 10 linhas do log
 docker logs --tail 10 pro4tech_backend
 ```
 
-## Visual Studio Code
-### Comandos do .devcontainer
-
-```bash
-# Reconstruir e abrir os containers 
-Dev Containers: Rebuild and Reopen in Container
-```
-
-
-## /App Container Backend
 ### Comandos Prisma
 
 ```bash
 # Gerar cliente Prisma
 npx prisma generate
+
+# Criar tabelas
+npx prisma migrate deploy
+
+# Rodar o seed (lembre-se, o seed limpa o banco antes de popular)
+npx prisma db seed
 
 # Abrir Prisma Studio
 npx prisma studio

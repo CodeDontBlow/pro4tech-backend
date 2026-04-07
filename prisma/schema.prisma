@@ -1,8 +1,200 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+    provider = "prisma-client"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
+}
+
+enum Role {
+    CLIENT
+    AGENT
+    ADMIN
+}
+
+enum ChatStatus {
+    OFFLINE
+    ONLINE
+    BUSY
+    AWAY
+}
+
+enum TicketStatus {
+    TRIAGE
+    OPENED
+    ESCALATED
+    CLOSED
+    RESOLVED
+}
+
+enum TicketPriority {
+    LOW
+    MEDIUM
+    HIGH
+    HIGHEST
+}
+
+enum TicketAction {
+    ESCALATION
+    RETURN
+}
+
+enum SupportLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
+
+
+
+
+model User {
+    id              String          @id
+    companyId       String
+    phone           String?         @unique
+    email           String          @unique    
+    hashedPassword  String
+    name            String
+    role            Role            @default(CLIENT)
+    chatStatus      ChatStatus      @default(OFFLINE)
+    lastSeen        DateTime?
+    isActive        Boolean         @default(true)
+    resetToken      String?
+    resetTknExpires DateTime?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
+    lastLogin       DateTime?
+
+    company         Company         @relation(fields: [companyId], references: [id])
+    tickets         Ticket[]        @relation("ClientTicket")
+    agent           Agent?
+}
+
+model Company {
+    id              String          @id
+    cnpj            String          @unique
+    name            String   
+    contactName     String?
+    contactEmail    String?         @unique
+    accessCode      String          @unique
+    isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
+
+    users           User[]
+    tickets         Ticket[]
+}
+
+model Agent {
+    id              String          @id
+    supportLevel    SupportLevel
+    canAnswer       Boolean
+
+    user            User            @relation(fields: [id], references: [id])
+    agentGroups     AgentGroup[]
+    tickets         Ticket[]        @relation("AgentTicket")
+    historyFrom     TicketHistory[] @relation("FromAgent")
+    historyTo       TicketHistory[] @relation("ToAgent")
+}
+
+model SupportGroup {
+    id              String          @id
+    name            String
+    description     String
+    isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    deletedAt       DateTime?
+
+    agentGroups     AgentGroup[]
+    tickets         Ticket[]
+    historyFrom     TicketHistory[] @relation("FromGroup")
+    historyTo       TicketHistory[] @relation("ToGroup")
+    triageRules     TriageRule[]
+}
+
+model AgentGroup {
+    agentId         String
+    supportGroupId  String
+    @@id([agentId, supportGroupId])
+    assignedAt      DateTime        @default(now())
+
+    agent           Agent           @relation(fields: [agentId], references: [id])
+    supportGroup    SupportGroup    @relation(fields: [supportGroupId], references: [id])
+}
+
+
+
+
+
+model Ticket {
+    id              String          @id
+    companyId       String
+    clientId        String
+    agentId         String?
+    supportGroupId  String?
+    subjectId       String?
+    status          TicketStatus    @default(TRIAGE)
+    priority        TicketPriority?
+    ratingScore     Int?
+    ratingComment   String?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    closedAt        DateTime?
+    
+    client          User            @relation("ClientTicket", fields: [clientId], references: [id])
+    agent           Agent?          @relation("AgentTicket", fields: [agentId], references: [id])
+    company         Company         @relation(fields: [companyId], references: [id])
+    supportGroup    SupportGroup?   @relation(fields: [supportGroupId], references: [id])
+    subject         TicketSubject?  @relation(fields: [subjectId], references: [id])   
+    ticketHistories TicketHistory[]
+}
+
+model TicketHistory {
+    id              String          @id
+    ticketId        String
+    fromStatus      TicketStatus?
+    toStatus        TicketStatus?
+    fromGroupId     String?
+    toGroupId       String?
+    fromAgentId     String?
+    toAgentId       String?
+    actionType      TicketAction
+    createdAt       DateTime        @default(now())
+
+    ticketHistory   Ticket          @relation(fields: [ticketId], references: [id])
+    fromSupportGroup SupportGroup?  @relation("FromGroup", fields: [fromGroupId], references: [id])
+    toSupportGroup  SupportGroup?   @relation("ToGroup", fields: [toGroupId], references: [id])
+    fromAgent       Agent?          @relation("FromAgent", fields: [fromAgentId], references: [id])       
+    toAgent         Agent?          @relation("ToAgent", fields: [toAgentId], references: [id])       
+}
+
+model TicketSubject {
+    id              String          @id
+    name            String          @unique
+    description     String
+    isActive        Boolean         @default(true)
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt    
+
+    tickets         Ticket[]
+    triageRules     TriageRule[]
+}
+
+model TriageRule {
+    id              String          @id
+    parentId        String?  
+    question        String?
+    answerTrigger   String?
+    isLeaf          Boolean         @default(false)
+    targetGroupId   String?
+    subjectId       String?
+
+    parent          TriageRule?     @relation("TriageNode", fields: [parentId], references: [id], onDelete: Cascade)
+    children        TriageRule[]    @relation("TriageNode")
+    supportGroup    SupportGroup?   @relation(fields: [targetGroupId], references: [id])
+    subject         TicketSubject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 }
