@@ -51,6 +51,26 @@ export class SubjectDto {
   isActive: boolean;
 }
 
+export class SupportGroupTraverseDto {
+  @ApiProperty({
+    description: 'ID unico do grupo de suporte',
+    example: '550e8400-e29b-41d4-a716-446655440100',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Nome do grupo de suporte',
+    example: 'Suporte Nível 1',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Descricao do grupo de suporte',
+    example: 'Equipe de atendimento inicial',
+  })
+  description: string;
+}
+
 export class TraverseResponseDto {
   @ApiProperty({
     description: 'ID único do nó',
@@ -101,4 +121,11 @@ export class TraverseResponseDto {
     example: '550e8400-e29b-41d4-a716-446655440100',
   })
   targetGroupId?: string;
+
+  @ApiProperty({
+    required: false,
+    type: SupportGroupTraverseDto,
+    description: 'Grupo de suporte associado ao nó (presente em folhas)',
+  })
+  supportGroup?: SupportGroupTraverseDto;
 }

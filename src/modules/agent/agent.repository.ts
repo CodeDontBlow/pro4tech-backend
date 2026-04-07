@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import { SupportLevel } from 'generated/prisma/client';
+import { Prisma, SupportLevel } from 'generated/prisma/client';
 import { UpdateAgentDto } from './dtos/update-agent.dto';
 import { CreateAgentDto } from './dtos/create-agent.dto';
 
@@ -15,6 +15,32 @@ interface PaginationParams {
   limit: number;
 }
 
+const AGENT_WITH_RELATIONS_INCLUDE = {
+  user: true,
+  agentGroups: {
+    where: {
+      supportGroup: {
+        deletedAt: null,
+      },
+    },
+    orderBy: {
+      assignedAt: 'asc',
+    },
+    include: {
+      supportGroup: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.AgentInclude;
+
 @Injectable()
 export class AgentRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -22,18 +48,14 @@ export class AgentRepository {
   async findById(agentId: string) {
     return this.prisma.agent.findUnique({
       where: { id: agentId },
-      include: {
-        user: true,
-      },
+      include: AGENT_WITH_RELATIONS_INCLUDE,
     });
   }
 
   async findByUserId(userId: string) {
     return this.prisma.agent.findUnique({
       where: { id: userId },
-      include: {
-        user: true,
-      },
+      include: AGENT_WITH_RELATIONS_INCLUDE,
     });
   }
 
@@ -66,9 +88,7 @@ export class AgentRepository {
     const [agents, total] = await this.prisma.$transaction([
       this.prisma.agent.findMany({
         where,
-        include: {
-          user: true,
-        },
+        include: AGENT_WITH_RELATIONS_INCLUDE,
         skip,
         take,
         orderBy: {
@@ -95,9 +115,7 @@ export class AgentRepository {
         supportLevel: data.supportLevel,
         canAnswer: data.canAnswer,
       },
-      include: {
-        user: true,
-      },
+      include: AGENT_WITH_RELATIONS_INCLUDE,
     });
   }
 
@@ -119,9 +137,7 @@ export class AgentRepository {
     return this.prisma.agent.update({
       where: { id: agentId },
       data: updateData,
-      include: {
-        user: true,
-      },
+      include: AGENT_WITH_RELATIONS_INCLUDE,
     });
   }
 

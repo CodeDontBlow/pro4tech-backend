@@ -59,6 +59,44 @@ class UserNestedResponseAgentDto {
   updatedAt: Date;
 }
 
+class SupportGroupNestedResponseAgentDto {
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    description: 'ID do grupo de suporte',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Geral',
+    description: 'Nome do grupo de suporte',
+  })
+  name: string;
+
+  @ApiProperty({
+    example: 'Fila de suporte transversal para duvidas gerais',
+    description: 'Descricao do grupo de suporte',
+  })
+  description: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Se o grupo de suporte esta ativo',
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    example: '2026-04-02T10:30:00Z',
+    description: 'Data de criacao do grupo de suporte',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2026-04-02T10:30:00Z',
+    description: 'Data de ultima atualizacao do grupo de suporte',
+  })
+  updatedAt: Date;
+}
+
 /**
  * DTO de resposta para Agent (com dados do User aninhado)
  */
@@ -87,6 +125,12 @@ export class ResponseAgentDto {
     type: UserNestedResponseAgentDto,
   })
   user: UserNestedResponseAgentDto;
+
+  @ApiPropertyOptional({
+    description: 'Grupo de suporte principal do agent',
+    type: SupportGroupNestedResponseAgentDto,
+  })
+  supportGroup?: SupportGroupNestedResponseAgentDto;
 
   @ApiPropertyOptional({
     example: '2026-04-02T10:30:00Z',
