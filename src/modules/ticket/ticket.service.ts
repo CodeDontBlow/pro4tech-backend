@@ -12,6 +12,7 @@ import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
 import { SupportGroupRepository } from '../support-group/support-group.repository';
 import { TicketSubjectRepository } from '../ticket-subject/ticket-subject.repository';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 import {
   TicketAction,
   TicketStatus,
@@ -25,6 +26,12 @@ type ListTicketsInput = {
   agentId?: string;
   clientId?: string;
   includeArchived?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+type BuildVisibilityWhereInput = Omit<ListTicketsInput, 'page' | 'limit'> & {
+  agentSupportGroupIds?: string[];
 };
 
 type TicketWithRelations = NonNullable<
@@ -115,7 +122,7 @@ export class TicketService {
       throw new BadRequestException('Tickets arquivados não podem ser atualizados');
     }
 
-    this.assertTicketVisibility(ticket, user);
+    await this.assertTicketVisibility(ticket, user);
 
     const hasStatusChange = dto.status !== undefined;
     const hasPriorityChange = dto.priority !== undefined;
@@ -233,7 +240,7 @@ export class TicketService {
       throw new NotFoundException('Ticket não encontrado');
     }
 
-    this.assertTicketVisibility(ticket, user);
+    await this.assertTicketVisibility(ticket, user);
     return ticket;
   }
 
@@ -244,7 +251,17 @@ export class TicketService {
     agentId,
     clientId,
     includeArchived = false,
+    page = 1,
+    limit = 10,
   }: ListTicketsInput) {
+    const normalizedPage = this.normalizePage(page);
+    const normalizedLimit = this.normalizeLimit(limit);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const role = this.getRole(user);
+    const agentSupportGroupIds =
+      role === Role.AGENT ? await this.getAgentSupportGroupIds(user.sub) : [];
+
     const where = this.buildVisibilityWhere({
       user,
       status,
@@ -252,14 +269,22 @@ export class TicketService {
       agentId,
       clientId,
       includeArchived,
+      agentSupportGroupIds,
     });
 
-    const tickets = await this.ticketRepository.findMany(where);
+    const [tickets, total] = await Promise.all([
+      this.ticketRepository.findMany(where, {
+        skip,
+        take: normalizedLimit,
+      }),
+      this.ticketRepository.count(where),
+    ]);
+
     this.logger.log(
-      `Listagem de tickets concluída — role: ${user.role}, userId: ${user.sub}, total: ${tickets.length}`,
+      `Listagem de tickets concluída — role: ${user.role}, userId: ${user.sub}, total: ${tickets.length}, page: ${normalizedPage}, limit: ${normalizedLimit}`,
     );
 
-    return tickets;
+    return new ResponsePaginationDto(tickets, total, normalizedPage, normalizedLimit);
   }
 
   async archiveTicket(ticketId: string, user: UserPayload) {
@@ -402,7 +427,8 @@ export class TicketService {
     agentId,
     clientId,
     includeArchived,
-  }: ListTicketsInput): Prisma.TicketWhereInput {
+    agentSupportGroupIds = [],
+  }: BuildVisibilityWhereInput): Prisma.TicketWhereInput {
     const role = this.getRole(user);
 
     const baseWhere: Prisma.TicketWhereInput = {
@@ -438,11 +464,22 @@ export class TicketService {
     }
 
     if (role === Role.AGENT) {
+      const visibilityRules: Prisma.TicketWhereInput[] = [{ agentId: user.sub }];
+
+      if (agentSupportGroupIds.length > 0) {
+        visibilityRules.push({
+          supportGroupId: {
+            in: agentSupportGroupIds,
+          },
+        });
+      }
+
       return {
         ...baseWhere,
         ...(companyId ? { companyId } : {}),
         ...(agentId ? { agentId } : {}),
         ...(clientId ? { clientId } : {}),
+        OR: visibilityRules,
       };
     }
 
@@ -450,10 +487,10 @@ export class TicketService {
     throw new ForbiddenException('Perfil de usuário inválido');
   }
 
-  private assertTicketVisibility(
+  private async assertTicketVisibility(
     ticket: TicketWithRelations,
     user: UserPayload,
-  ) {
+  ): Promise<void> {
     const role = this.getRole(user);
 
     if (role === Role.CLIENT && ticket.clientId !== user.sub) {
@@ -464,8 +501,68 @@ export class TicketService {
     }
 
     if (role === Role.AGENT) {
-      return;
+      if (ticket.agentId === user.sub) {
+        return;
+      }
+
+      const agentSupportGroupIds = await this.getAgentSupportGroupIds(user.sub);
+      if (
+        ticket.supportGroupId
+        && agentSupportGroupIds.includes(ticket.supportGroupId)
+      ) {
+        return;
+      }
+
+      this.logger.warn(
+        `Agente sem acesso tentou consultar ticket — ticketId: ${ticket.id}, userId: ${user.sub}, supportGroupId: ${ticket.supportGroupId ?? 'nenhum'}`,
+      );
+      throw new ForbiddenException('Você não tem acesso a este ticket');
     }
+  }
+
+  private async getAgentSupportGroupIds(agentId: string): Promise<string[]> {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        agentGroups: {
+          where: {
+            supportGroup: {
+              deletedAt: null,
+              isActive: true,
+            },
+          },
+          select: {
+            supportGroupId: true,
+          },
+        },
+      },
+    });
+
+    if (!agent) {
+      this.logger.warn(
+        `Agente não encontrado ao carregar grupos de suporte — agentId: ${agentId}`,
+      );
+      return [];
+    }
+
+    return agent.agentGroups.map((group) => group.supportGroupId);
+  }
+
+  private normalizePage(page: number): number {
+    if (!Number.isFinite(page) || page < 1) {
+      return 1;
+    }
+
+    return Math.floor(page);
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit < 1) {
+      return 10;
+    }
+
+    const normalizedLimit = Math.floor(limit);
+    return Math.min(normalizedLimit, 100);
   }
 
   private getRole(user: UserPayload): Role {

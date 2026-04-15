@@ -7,7 +7,7 @@ import {
 
 class ResponseTicketClientDto {
   @ApiProperty({
-    example: 'd6481f48-1f3e-4fd3-8ad0-68066ccbd413',
+    example: '',
     description: 'ID do cliente',
   })
   id: string;
@@ -21,7 +21,7 @@ class ResponseTicketClientDto {
 
 class ResponseTicketAgentDto {
   @ApiProperty({
-    example: '2c0835d1-4036-4f40-a021-fdd033fc2f8d',
+    example: '',
     description: 'ID do agente',
   })
   id: string;
@@ -36,7 +36,7 @@ class ResponseTicketAgentDto {
 
 class ResponseTicketCompanyDto {
   @ApiProperty({
-    example: 'f3c86ae4-7dbf-4f11-bf0a-5cc00ea259ec',
+    example: '',
     description: 'ID da empresa',
   })
   id: string;
@@ -50,7 +50,7 @@ class ResponseTicketCompanyDto {
 
 class ResponseTicketSupportGroupDto {
   @ApiProperty({
-    example: '4f2f77ce-dddd-47e5-93ea-81c1f0fa542f',
+    example: '',
     description: 'ID do grupo de suporte',
   })
   id: string;
@@ -64,7 +64,7 @@ class ResponseTicketSupportGroupDto {
 
 class ResponseTicketSubjectDto {
   @ApiProperty({
-    example: 'f56fafad-842e-47d1-823f-5748e7df80c0',
+    example: '',
     description: 'ID do assunto do ticket',
   })
   id: string;
@@ -78,39 +78,39 @@ class ResponseTicketSubjectDto {
 
 export class ResponseTicketDto {
   @ApiProperty({
-    example: '1a2b3c4d-5e6f-7890-abcd-1234567890ab',
+    example: '',
     description: 'ID do ticket (UUID)',
   })
   id: string;
 
   @ApiProperty({
-    example: 'company-123',
+    example: '',
     description: 'ID da empresa associada ao ticket',
   })
   companyId: string;
 
   @ApiProperty({
-    example: 'user-456',
+    example: '',
     description: 'ID do cliente que abriu o ticket',
   })
   clientId: string;
 
   @ApiProperty({
-    example: 'agent-789',
+    example: '',
     description: 'ID do agente atribuído ao ticket',
     nullable: true,
   })
   agentId?: string | null;
 
   @ApiProperty({
-    example: 'group-111',
+    example: '',
     description: 'ID do grupo de suporte',
     nullable: true,
   })
   supportGroupId?: string | null;
 
   @ApiProperty({
-    example: 'subject-222',
+    example: '',
     description: 'ID do assunto do ticket',
     nullable: true,
   })
@@ -206,4 +206,44 @@ export class ResponseTicketDto {
     description: 'Dados reduzidos do assunto',
   })
   subject?: ResponseTicketSubjectDto | null;
+}
+
+class ResponseTicketPaginationMetaDto {
+  @ApiProperty({
+    example: 42,
+    description: 'Quantidade total de tickets encontrados',
+  })
+  total: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Página atual',
+  })
+  page: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Última página disponível',
+  })
+  lastPage: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Quantidade de registros por página',
+  })
+  limit: number;
+}
+
+export class ResponseTicketPaginationDto {
+  @ApiProperty({
+    type: [ResponseTicketDto],
+    description: 'Tickets retornados na página atual',
+  })
+  data: ResponseTicketDto[];
+
+  @ApiProperty({
+    type: ResponseTicketPaginationMetaDto,
+    description: 'Metadados de paginação',
+  })
+  meta: ResponseTicketPaginationMetaDto;
 }

@@ -18,7 +18,10 @@ import {
 import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
-import { ResponseTicketDto } from './dtos/response-ticket.dto';
+import {
+  ResponseTicketDto,
+  ResponseTicketPaginationDto,
+} from './dtos/response-ticket.dto';
 import {
   AuthUser,
   UserPayload,
@@ -26,6 +29,7 @@ import {
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Role } from 'generated/prisma/client';
 import { TicketStatus } from '../../../generated/prisma/enums';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 @ApiBearerAuth()
 @ApiTags('Ticket')
@@ -120,11 +124,25 @@ export class TicketController {
     type: Boolean,
     description: 'Defina como true para incluir tickets arquivados',
   })
-  @ApiOperation({ summary: 'Listar tickets com filtros opcionais' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Quantidade por página (padrão: 10, máximo: 100)',
+  })
+  @ApiOperation({ summary: 'Listar tickets com filtros opcionais (paginado)' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de tickets',
-    type: [ResponseTicketDto],
+    description: 'Lista paginada de tickets',
+    type: ResponseTicketPaginationDto,
   })
   async list(
     @AuthUser() user: UserPayload,
@@ -133,7 +151,9 @@ export class TicketController {
     @Query('agentId') agentId?: string,
     @Query('clientId') clientId?: string,
     @Query('includeArchived') includeArchived?: string,
-  ): Promise<ResponseTicketDto[]> {
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<ResponsePaginationDto<ResponseTicketDto>> {
     return this.ticketService.listTickets({
       user,
       status,
@@ -141,6 +161,8 @@ export class TicketController {
       agentId,
       clientId,
       includeArchived: includeArchived === 'true',
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
     });
   }
 

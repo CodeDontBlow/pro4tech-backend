@@ -21,6 +21,11 @@ type FindTicketOptions = {
   includeDeleted?: boolean;
 };
 
+type FindManyTicketOptions = {
+  skip?: number;
+  take?: number;
+};
+
 const TICKET_PUBLIC_SELECT = {
   id: true,
   companyId: true,
@@ -109,14 +114,25 @@ export class TicketRepository {
     });
   }
 
-  async findMany(where: Prisma.TicketWhereInput = {}) {
+  async findMany(
+    where: Prisma.TicketWhereInput = {},
+    options: FindManyTicketOptions = {},
+  ) {
+    const { skip, take } = options;
+
     return this.prisma.ticket.findMany({
       where,
       select: TICKET_PUBLIC_SELECT,
+      skip,
+      take,
       orderBy: {
         createdAt: 'desc',
       },
     });
+  }
+
+  async count(where: Prisma.TicketWhereInput = {}) {
+    return this.prisma.ticket.count({ where });
   }
 
   async archive(ticketId: string) {

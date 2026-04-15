@@ -9,7 +9,7 @@ import { TicketPriority } from '../../../../generated/prisma/enums';
 
 export class CreateTicketDto {
   @ApiProperty({
-    example: 'd6481f48-1f3e-4fd3-8ad0-68066ccbd413',
+    example: '',
     description: 'ID do cliente que está abrindo o ticket (UUID)',
     required: true,
   })
@@ -18,7 +18,7 @@ export class CreateTicketDto {
   clientId: string;
 
   @ApiProperty({
-    example: 'f3c86ae4-7dbf-4f11-bf0a-5cc00ea259ec',
+    example: '',
     description: 'ID do grupo de suporte selecionado após triagem (UUID)',
     required: true,
   })
@@ -27,7 +27,7 @@ export class CreateTicketDto {
   supportGroupId: string;
 
   @ApiProperty({
-    example: '4f2f77ce-dddd-47e5-93ea-81c1f0fa542f',
+    example: '',
     description: 'ID do assunto do ticket selecionado após triagem (UUID)',
     required: true,
   })
