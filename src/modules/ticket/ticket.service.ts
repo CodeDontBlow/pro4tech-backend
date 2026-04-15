@@ -10,14 +10,13 @@ import { Prisma, Role } from 'generated/prisma/client';
 import { TicketRepository } from './ticket.repository';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
-import { SupportGroupRepository } from '../support-group/support-group.repository';
-import { TicketSubjectRepository } from '../ticket-subject/ticket-subject.repository';
 import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 import {
   TicketAction,
   TicketStatus,
 } from '../../../generated/prisma/enums';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
+import { TriageRuleService } from '../triage-rule/triage-rule.service';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -45,8 +44,7 @@ export class TicketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ticketRepository: TicketRepository,
-    private readonly supportGroupRepository: SupportGroupRepository,
-    private readonly ticketSubjectRepository: TicketSubjectRepository,
+    private readonly triageRuleService: TriageRuleService,
   ) {}
 
   async createTicket(dto: CreateTicketDto, user: UserPayload) {
@@ -58,21 +56,13 @@ export class TicketService {
       throw new ForbiddenException('Apenas clientes podem criar tickets');
     }
 
-    if (dto.clientId !== user.sub) {
-      this.logger.warn(
-        `clientId divergente na criação de ticket — authUser: ${user.sub}, payloadClientId: ${dto.clientId}`,
-      );
-      throw new ForbiddenException(
-        'clientId deve corresponder ao usuário autenticado',
-      );
-    }
-
-    await this.validateSupportGroup(dto.supportGroupId);
-    await this.validateSubject(dto.subjectId);
+    const resolvedLeaf = await this.triageRuleService.resolveLeafForTicketCreation(
+      dto.triageLeafId,
+    );
 
     const client = await this.prisma.user.findFirst({
       where: {
-        id: dto.clientId,
+        id: user.sub,
         role: Role.CLIENT,
         deletedAt: null,
         isActive: true,
@@ -85,7 +75,7 @@ export class TicketService {
 
     if (!client) {
       this.logger.warn(
-        `Cliente não encontrado ou inativo na criação de ticket — clientId: ${dto.clientId}`,
+        `Cliente não encontrado ou inativo na criação de ticket — clientId: ${user.sub}`,
       );
       throw new NotFoundException('Cliente não encontrado ou inativo');
     }
@@ -93,12 +83,14 @@ export class TicketService {
     const ticket = await this.ticketRepository.create({
       companyId: client.companyId,
       clientId: client.id,
-      supportGroupId: dto.supportGroupId,
-      subjectId: dto.subjectId,
+      supportGroupId: resolvedLeaf.supportGroupId,
+      subjectId: resolvedLeaf.subjectId,
       priority: dto.priority,
     });
 
-    this.logger.log(`Ticket criado — id: ${ticket.id}, clientId: ${client.id}`);
+    this.logger.log(
+      `Ticket criado — id: ${ticket.id}, clientId: ${client.id}, triageLeafId: ${dto.triageLeafId}`,
+    );
     return ticket;
   }
 
@@ -572,34 +564,6 @@ export class TicketService {
 
     this.logger.warn(`Role inválido recebido no token — role: ${user.role}`);
     throw new ForbiddenException('Perfil de usuário inválido');
-  }
-
-  private async validateSupportGroup(supportGroupId: string): Promise<void> {
-    const supportGroup = await this.supportGroupRepository.findById(supportGroupId);
-    if (!supportGroup) {
-      this.logger.warn(`Grupo de suporte não encontrado — id: ${supportGroupId}`);
-      throw new NotFoundException(
-        `Grupo de suporte ${supportGroupId} não encontrado`,
-      );
-    }
-    if (!supportGroup.isActive) {
-      this.logger.warn(`Grupo de suporte inativo — id: ${supportGroupId}`);
-      throw new BadRequestException('Grupo de suporte está inativo');
-    }
-  }
-
-  private async validateSubject(subjectId: string): Promise<void> {
-    const subject = await this.ticketSubjectRepository.findById(subjectId);
-    if (!subject) {
-      this.logger.warn(`Assunto do ticket não encontrado — id: ${subjectId}`);
-      throw new NotFoundException(
-        `Assunto do ticket ${subjectId} não encontrado`,
-      );
-    }
-    if (!subject.isActive) {
-      this.logger.warn(`Assunto do ticket inativo — id: ${subjectId}`);
-      throw new BadRequestException('Assunto do ticket está inativo');
-    }
   }
 
   private validateStatusTransition(

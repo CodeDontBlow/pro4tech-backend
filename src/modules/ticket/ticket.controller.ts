@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,6 +31,7 @@ import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Role } from 'generated/prisma/client';
 import { TicketStatus } from '../../../generated/prisma/enums';
 import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
+import { TicketCreateRateLimitGuard } from './guards/ticket-create-rate-limit.guard';
 
 @ApiBearerAuth()
 @ApiTags('Ticket')
@@ -40,15 +42,21 @@ export class TicketController {
   /**
    * POST /tickets
    * Criar um novo ticket
-   * - Assunto e grupo de suporte devem vir do resultado da triagem no frontend
+   * - O frontend envia apenas triageLeafId; backend resolve assunto e grupo pela folha
+   * - clientId é sempre obtido do token JWT do usuário autenticado
    */
   @Post()
   @Roles(Role.CLIENT)
+  @UseGuards(TicketCreateRateLimitGuard)
   @ApiOperation({ summary: 'Criar um novo ticket' })
   @ApiResponse({
     status: 201,
     description: 'Ticket criado com sucesso',
     type: ResponseTicketDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Muitas tentativas de criação de ticket em curto período',
   })
   async create(
     @Body() dto: CreateTicketDto,

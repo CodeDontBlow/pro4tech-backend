@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { TriageRuleRepository } from './triage-rule.repository';
 import { ResponseTriageRuleDto } from './dtos/response-triage-rule.dto';
@@ -226,6 +230,70 @@ async findRoot(): Promise<ResponseTriageRuleDto> {
             description: nextNode.supportGroup.description,
           }
         : undefined,
+    };
+  }
+
+  async resolveLeafForTicketCreation(triageLeafId: string): Promise<{
+    subjectId: string;
+    supportGroupId: string;
+  }> {
+    const triageLeaf = await this.prisma.triageRule.findUnique({
+      where: { id: triageLeafId },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            isActive: true,
+          },
+        },
+        supportGroup: {
+          select: {
+            id: true,
+            isActive: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!triageLeaf) {
+      throw new NotFoundException('Nó folha de triagem não encontrado');
+    }
+
+    if (!triageLeaf.isLeaf) {
+      throw new BadRequestException(
+        'triageLeafId deve referenciar um nó folha de triagem',
+      );
+    }
+
+    if (!triageLeaf.subjectId || !triageLeaf.subject) {
+      throw new BadRequestException(
+        'Nó folha de triagem sem assunto configurado',
+      );
+    }
+
+    if (!triageLeaf.subject.isActive) {
+      throw new BadRequestException('Assunto da triagem está inativo');
+    }
+
+    if (!triageLeaf.targetGroupId || !triageLeaf.supportGroup) {
+      throw new BadRequestException(
+        'Nó folha de triagem sem grupo de suporte configurado',
+      );
+    }
+
+    if (
+      !triageLeaf.supportGroup.isActive
+      || triageLeaf.supportGroup.deletedAt !== null
+    ) {
+      throw new BadRequestException(
+        'Grupo de suporte da triagem está inativo ou removido',
+      );
+    }
+
+    return {
+      subjectId: triageLeaf.subjectId,
+      supportGroupId: triageLeaf.targetGroupId,
     };
   }
 
