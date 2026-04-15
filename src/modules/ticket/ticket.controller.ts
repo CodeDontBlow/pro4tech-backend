@@ -35,15 +35,15 @@ export class TicketController {
 
   /**
    * POST /tickets
-   * Create a new ticket
-   * - Subject and support group must come from frontend triage result
+   * Criar um novo ticket
+   * - Assunto e grupo de suporte devem vir do resultado da triagem no frontend
    */
   @Post()
   @Roles(Role.CLIENT)
-  @ApiOperation({ summary: 'Create a new ticket' })
+  @ApiOperation({ summary: 'Criar um novo ticket' })
   @ApiResponse({
     status: 201,
-    description: 'Ticket created successfully',
+    description: 'Ticket criado com sucesso',
     type: ResponseTicketDto,
   })
   async create(
@@ -55,7 +55,7 @@ export class TicketController {
 
   /**
    * GET /tickets/:id
-   * Get ticket by ID with all relationships
+   * Buscar ticket por ID com relacionamentos
    */
   @Get(':id')
   @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
@@ -63,15 +63,15 @@ export class TicketController {
     name: 'includeArchived',
     required: false,
     type: Boolean,
-    description: 'Set true to include archived tickets in lookup',
+    description: 'Defina como true para incluir tickets arquivados na consulta',
   })
-  @ApiOperation({ summary: 'Get ticket by ID' })
+  @ApiOperation({ summary: 'Buscar ticket por ID' })
   @ApiResponse({
     status: 200,
-    description: 'Ticket found',
+    description: 'Ticket encontrado',
     type: ResponseTicketDto,
   })
-  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  @ApiResponse({ status: 404, description: 'Ticket não encontrado' })
   async getById(
     @Param('id') ticketId: string,
     @AuthUser() user: UserPayload,
@@ -86,7 +86,7 @@ export class TicketController {
 
   /**
    * GET /tickets
-   * List tickets with optional filters
+   * Listar tickets com filtros opcionais
    */
   @Get()
   @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
@@ -94,35 +94,42 @@ export class TicketController {
     name: 'status',
     required: false,
     enum: TicketStatus,
-    description: 'Filter by ticket status',
+    description: 'Filtrar por status do ticket',
+  })
+  @ApiQuery({
+    name: 'companyId',
+    required: false,
+    type: String,
+    description: 'Filtrar por ID da empresa',
   })
   @ApiQuery({
     name: 'agentId',
     required: false,
     type: String,
-    description: 'Filter by assigned agent id',
+    description: 'Filtrar por ID do agente atribuído',
   })
   @ApiQuery({
     name: 'clientId',
     required: false,
     type: String,
-    description: 'Filter by client id',
+    description: 'Filtrar por ID do cliente',
   })
   @ApiQuery({
     name: 'includeArchived',
     required: false,
     type: Boolean,
-    description: 'Set true to include archived tickets',
+    description: 'Defina como true para incluir tickets arquivados',
   })
-  @ApiOperation({ summary: 'List tickets with optional filters' })
+  @ApiOperation({ summary: 'Listar tickets com filtros opcionais' })
   @ApiResponse({
     status: 200,
-    description: 'List of tickets',
+    description: 'Lista de tickets',
     type: [ResponseTicketDto],
   })
   async list(
     @AuthUser() user: UserPayload,
     @Query('status') status?: TicketStatus,
+    @Query('companyId') companyId?: string,
     @Query('agentId') agentId?: string,
     @Query('clientId') clientId?: string,
     @Query('includeArchived') includeArchived?: string,
@@ -130,6 +137,7 @@ export class TicketController {
     return this.ticketService.listTickets({
       user,
       status,
+      companyId,
       agentId,
       clientId,
       includeArchived: includeArchived === 'true',
@@ -138,25 +146,25 @@ export class TicketController {
 
   /**
    * PATCH /tickets/:id
-   * Update ticket (status, priority, rating, etc.)
+   * Atualizar ticket (status, prioridade, avaliação, etc.)
    */
   @Patch(':id')
   @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
-  @ApiOperation({ summary: 'Update ticket' })
+  @ApiOperation({ summary: 'Atualizar ticket' })
   @ApiResponse({
     status: 200,
-    description: 'Ticket updated successfully',
+    description: 'Ticket atualizado com sucesso',
     type: ResponseTicketDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid status transition or immutable field change',
+    description: 'Transição de status inválida ou alteração de campo imutável',
   })
   @ApiResponse({
     status: 403,
-    description: 'Only assigned agent can close ticket',
+    description: 'Apenas o agente atribuído pode fechar o ticket',
   })
-  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  @ApiResponse({ status: 404, description: 'Ticket não encontrado' })
   async update(
     @Param('id') ticketId: string,
     @Body() dto: UpdateTicketDto,
@@ -167,10 +175,10 @@ export class TicketController {
 
   @Patch(':id/archive')
   @Roles(Role.AGENT, Role.ADMIN)
-  @ApiOperation({ summary: 'Archive ticket' })
+  @ApiOperation({ summary: 'Arquivar ticket' })
   @ApiResponse({
     status: 200,
-    description: 'Ticket archived successfully',
+    description: 'Ticket arquivado com sucesso',
     type: ResponseTicketDto,
   })
   async archive(
@@ -182,10 +190,10 @@ export class TicketController {
 
   @Patch(':id/unarchive')
   @Roles(Role.AGENT, Role.ADMIN)
-  @ApiOperation({ summary: 'Unarchive ticket' })
+  @ApiOperation({ summary: 'Desarquivar ticket' })
   @ApiResponse({
     status: 200,
-    description: 'Ticket unarchived successfully',
+    description: 'Ticket desarquivado com sucesso',
     type: ResponseTicketDto,
   })
   async unarchive(
@@ -197,13 +205,13 @@ export class TicketController {
 
   /**
    * DELETE /tickets/:id
-   * Soft delete ticket
+   * Exclusão lógica de ticket
    */
   @Delete(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Delete ticket' })
-  @ApiResponse({ status: 204, description: 'Ticket deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  @ApiOperation({ summary: 'Excluir ticket' })
+  @ApiResponse({ status: 204, description: 'Ticket excluído com sucesso' })
+  @ApiResponse({ status: 404, description: 'Ticket não encontrado' })
   async delete(
     @Param('id') ticketId: string,
     @AuthUser() user: UserPayload,

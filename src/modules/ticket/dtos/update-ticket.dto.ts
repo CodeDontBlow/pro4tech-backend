@@ -16,47 +16,47 @@ export class UpdateTicketDto {
   @ApiProperty({
     example: 'OPENED',
     enum: ['TRIAGE', 'OPENED', 'ESCALATED', 'CLOSED', 'RESOLVED'],
-    description: 'New status for the ticket',
+    description: 'Novo status do ticket',
     required: false,
   })
   @IsOptional()
   @IsEnum(TicketStatus, {
-    message: 'Status must be TRIAGE, OPENED, ESCALATED, CLOSED, or RESOLVED',
+    message: 'Status deve ser TRIAGE, OPENED, ESCALATED, CLOSED ou RESOLVED',
   })
   status?: TicketStatus;
 
   @ApiProperty({
     example: 'HIGH',
     enum: TicketPriority,
-    description: 'Priority level',
+    description: 'Nível de prioridade',
     required: false,
     nullable: true,
   })
   @IsOptional()
   @IsEnum(TicketPriority, {
-    message: 'Priority must be LOW, MEDIUM, HIGH, or HIGHEST',
+    message: 'Prioridade deve ser LOW, MEDIUM, HIGH ou HIGHEST',
   })
   priority?: TicketPriority;
 
   @ApiProperty({
     example: 5,
-    description: 'Rating score (0-5)',
+    description: 'Nota de avaliação (0-5)',
     required: false,
     nullable: true,
   })
   @IsOptional()
-  @IsInt({ message: 'Rating score must be an integer' })
-  @Min(0, { message: 'Rating score must be at least 0' })
-  @Max(5, { message: 'Rating score must not exceed 5' })
+  @IsInt({ message: 'Nota de avaliação deve ser um número inteiro' })
+  @Min(0, { message: 'Nota de avaliação deve ser no mínimo 0' })
+  @Max(5, { message: 'Nota de avaliação deve ser no máximo 5' })
   ratingScore?: number;
 
   @ApiProperty({
     example: 'Great support!',
-    description: 'Rating comment from client',
+    description: 'Comentário de avaliação do cliente',
     required: false,
     nullable: true,
   })
   @IsOptional()
-  @IsString({ message: 'Rating comment must be a valid string' })
+  @IsString({ message: 'Comentário de avaliação deve ser uma string válida' })
   ratingComment?: string;
 }

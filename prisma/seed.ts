@@ -148,8 +148,8 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     groupNames: ['Geral'],
   },
   {
-    name: 'Fernanda Lima',
-    email: 'fernanda.lima@pro4tech.com',
+    name: 'agent',
+    email: 'agent@agent.com',
     phone: '+5511999000003',
     role: Role.AGENT,
     supportLevel: SupportLevel.LEVEL_1,

@@ -21,6 +21,7 @@ import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 type ListTicketsInput = {
   user: UserPayload;
   status?: TicketStatus;
+  companyId?: string;
   agentId?: string;
   clientId?: string;
   includeArchived?: boolean;
@@ -44,12 +45,18 @@ export class TicketService {
   async createTicket(dto: CreateTicketDto, user: UserPayload) {
     const role = this.getRole(user);
     if (role !== Role.CLIENT) {
-      throw new ForbiddenException('Only clients can create tickets');
+      this.logger.warn(
+        `Tentativa de criação de ticket por perfil inválido — role: ${role}`,
+      );
+      throw new ForbiddenException('Apenas clientes podem criar tickets');
     }
 
     if (dto.clientId !== user.sub) {
+      this.logger.warn(
+        `clientId divergente na criação de ticket — authUser: ${user.sub}, payloadClientId: ${dto.clientId}`,
+      );
       throw new ForbiddenException(
-        'clientId must match the authenticated user',
+        'clientId deve corresponder ao usuário autenticado',
       );
     }
 
@@ -70,7 +77,10 @@ export class TicketService {
     });
 
     if (!client) {
-      throw new NotFoundException('Client not found or inactive');
+      this.logger.warn(
+        `Cliente não encontrado ou inativo na criação de ticket — clientId: ${dto.clientId}`,
+      );
+      throw new NotFoundException('Cliente não encontrado ou inativo');
     }
 
     const ticket = await this.ticketRepository.create({
@@ -81,7 +91,7 @@ export class TicketService {
       priority: dto.priority,
     });
 
-    this.logger.log(`Ticket created — id: ${ticket.id}, clientId: ${client.id}`);
+    this.logger.log(`Ticket criado — id: ${ticket.id}, clientId: ${client.id}`);
     return ticket;
   }
 
@@ -96,14 +106,16 @@ export class TicketService {
     });
 
     if (!ticket) {
+      this.logger.warn(`Ticket não encontrado para atualização — id: ${ticketId}`);
       throw new NotFoundException('Ticket não encontrado');
     }
 
     if (ticket.isArchived) {
-      throw new BadRequestException('Archived tickets cannot be updated');
+      this.logger.warn(`Tentativa de atualizar ticket arquivado — id: ${ticketId}`);
+      throw new BadRequestException('Tickets arquivados não podem ser atualizados');
     }
 
-    await this.assertTicketVisibility(ticket, user);
+    this.assertTicketVisibility(ticket, user);
 
     const hasStatusChange = dto.status !== undefined;
     const hasPriorityChange = dto.priority !== undefined;
@@ -116,20 +128,31 @@ export class TicketService {
 
     if (hasStatusChange || hasPriorityChange) {
       if (role === Role.CLIENT) {
-        throw new ForbiddenException('Clients can only submit ticket rating');
+        this.logger.warn(
+          `Cliente tentou atualizar status/prioridade — ticketId: ${ticketId}, userId: ${user.sub}`,
+        );
+        throw new ForbiddenException(
+          'Clientes podem apenas enviar avaliação de ticket',
+        );
       }
 
       if (role === Role.AGENT && ticket.agentId !== user.sub) {
+        this.logger.warn(
+          `Agente não atribuído tentou atualizar status/prioridade — ticketId: ${ticketId}, userId: ${user.sub}, assignedAgentId: ${ticket.agentId ?? 'nenhum'}`,
+        );
         throw new ForbiddenException(
-          'Only the assigned agent can update status or priority',
+          'Apenas o agente atribuído pode atualizar status ou prioridade',
         );
       }
     }
 
     if (hasRatingChange) {
       if (role !== Role.CLIENT || ticket.clientId !== user.sub) {
+        this.logger.warn(
+          `Usuário sem permissão tentou avaliar ticket — ticketId: ${ticketId}, userId: ${user.sub}`,
+        );
         throw new ForbiddenException(
-          'Only the ticket owner can submit a rating',
+          'Apenas o proprietário do ticket pode enviar uma avaliação',
         );
       }
 
@@ -137,8 +160,11 @@ export class TicketService {
         ticket.status !== TicketStatus.CLOSED
         && ticket.status !== TicketStatus.RESOLVED
       ) {
+        this.logger.warn(
+          `Tentativa de avaliar ticket fora de status permitido — ticketId: ${ticketId}, status: ${ticket.status}`,
+        );
         throw new BadRequestException(
-          'Rating is allowed only when ticket is CLOSED or RESOLVED',
+          'A avaliação é permitida apenas quando o ticket está FECHADO ou RESOLVIDO',
         );
       }
     }
@@ -148,8 +174,11 @@ export class TicketService {
 
       if (dto.status === TicketStatus.CLOSED) {
         if (!ticket.agentId || ticket.agentId !== user.sub) {
+          this.logger.warn(
+            `Tentativa de fechar ticket por agente não atribuído — ticketId: ${ticketId}, userId: ${user.sub}, assignedAgentId: ${ticket.agentId ?? 'nenhum'}`,
+          );
           throw new ForbiddenException(
-            'Only the assigned agent can close this ticket',
+            'Apenas o agente atribuído pode fechar este ticket',
           );
         }
       }
@@ -180,7 +209,13 @@ export class TicketService {
         fromAgentId: ticket.agentId,
         toAgentId: ticket.agentId,
       });
+
+      this.logger.log(
+        `Status do ticket atualizado — id: ${ticketId}, de: ${ticket.status}, para: ${dto.status}`,
+      );
     }
+
+    this.logger.log(`Ticket atualizado — id: ${ticketId}`);
 
     return updatedTicket;
   }
@@ -194,29 +229,37 @@ export class TicketService {
       includeArchived,
     });
     if (!ticket) {
+      this.logger.warn(`Ticket não encontrado para consulta — id: ${ticketId}`);
       throw new NotFoundException('Ticket não encontrado');
     }
 
-    await this.assertTicketVisibility(ticket, user);
+    this.assertTicketVisibility(ticket, user);
     return ticket;
   }
 
   async listTickets({
     user,
     status,
+    companyId,
     agentId,
     clientId,
     includeArchived = false,
   }: ListTicketsInput) {
-    const where = await this.buildVisibilityWhere({
+    const where = this.buildVisibilityWhere({
       user,
       status,
+      companyId,
       agentId,
       clientId,
       includeArchived,
     });
 
-    return this.ticketRepository.findMany(where);
+    const tickets = await this.ticketRepository.findMany(where);
+    this.logger.log(
+      `Listagem de tickets concluída — role: ${user.role}, userId: ${user.sub}, total: ${tickets.length}`,
+    );
+
+    return tickets;
   }
 
   async archiveTicket(ticketId: string, user: UserPayload) {
@@ -226,20 +269,28 @@ export class TicketService {
     });
 
     if (!ticket) {
+      this.logger.warn(`Ticket não encontrado para arquivamento — id: ${ticketId}`);
       throw new NotFoundException('Ticket não encontrado');
     }
 
     if (role === Role.CLIENT) {
-      throw new ForbiddenException('Clients cannot archive tickets');
+      this.logger.warn(
+        `Cliente tentou arquivar ticket — ticketId: ${ticketId}, userId: ${user.sub}`,
+      );
+      throw new ForbiddenException('Clientes não podem arquivar tickets');
     }
 
     if (role === Role.AGENT && ticket.agentId !== user.sub) {
+      this.logger.warn(
+        `Agente não atribuído tentou arquivar ticket — ticketId: ${ticketId}, userId: ${user.sub}, assignedAgentId: ${ticket.agentId ?? 'nenhum'}`,
+      );
       throw new ForbiddenException(
-        'Only the assigned agent can archive this ticket',
+        'Apenas o agente atribuído pode arquivar este ticket',
       );
     }
 
     if (ticket.isArchived) {
+      this.logger.log(`Ticket já estava arquivado — id: ${ticketId}`);
       return ticket;
     }
 
@@ -255,6 +306,8 @@ export class TicketService {
       toAgentId: ticket.agentId,
     });
 
+    this.logger.log(`Ticket arquivado — id: ${ticketId}`);
+
     return archivedTicket;
   }
 
@@ -265,20 +318,30 @@ export class TicketService {
     });
 
     if (!ticket) {
+      this.logger.warn(
+        `Ticket não encontrado para desarquivamento — id: ${ticketId}`,
+      );
       throw new NotFoundException('Ticket não encontrado');
     }
 
     if (role === Role.CLIENT) {
-      throw new ForbiddenException('Clients cannot unarchive tickets');
+      this.logger.warn(
+        `Cliente tentou desarquivar ticket — ticketId: ${ticketId}, userId: ${user.sub}`,
+      );
+      throw new ForbiddenException('Clientes não podem desarquivar tickets');
     }
 
     if (role === Role.AGENT && ticket.agentId !== user.sub) {
+      this.logger.warn(
+        `Agente não atribuído tentou desarquivar ticket — ticketId: ${ticketId}, userId: ${user.sub}, assignedAgentId: ${ticket.agentId ?? 'nenhum'}`,
+      );
       throw new ForbiddenException(
-        'Only the assigned agent can unarchive this ticket',
+        'Apenas o agente atribuído pode desarquivar este ticket',
       );
     }
 
     if (!ticket.isArchived) {
+      this.logger.log(`Ticket já estava desarquivado — id: ${ticketId}`);
       return ticket;
     }
 
@@ -294,13 +357,18 @@ export class TicketService {
       toAgentId: ticket.agentId,
     });
 
+    this.logger.log(`Ticket desarquivado — id: ${ticketId}`);
+
     return unarchivedTicket;
   }
 
   async deleteTicket(ticketId: string, user: UserPayload): Promise<void> {
     const role = this.getRole(user);
     if (role !== Role.ADMIN) {
-      throw new ForbiddenException('Only admins can delete tickets');
+      this.logger.warn(
+        `Usuário sem permissão tentou excluir ticket — ticketId: ${ticketId}, userId: ${user.sub}, role: ${role}`,
+      );
+      throw new ForbiddenException('Apenas administradores podem excluir tickets');
     }
 
     const ticket = await this.ticketRepository.findById(ticketId, {
@@ -308,6 +376,7 @@ export class TicketService {
     });
 
     if (!ticket) {
+      this.logger.warn(`Ticket não encontrado para exclusão lógica — id: ${ticketId}`);
       throw new NotFoundException('Ticket não encontrado');
     }
 
@@ -323,16 +392,17 @@ export class TicketService {
       toAgentId: ticket.agentId,
     });
 
-    this.logger.log(`Ticket soft deleted — id: ${ticketId}`);
+    this.logger.log(`Ticket excluído logicamente — id: ${ticketId}`);
   }
 
-  private async buildVisibilityWhere({
+  private buildVisibilityWhere({
     user,
     status,
+    companyId,
     agentId,
     clientId,
     includeArchived,
-  }: ListTicketsInput): Promise<Prisma.TicketWhereInput> {
+  }: ListTicketsInput): Prisma.TicketWhereInput {
     const role = this.getRole(user);
 
     const baseWhere: Prisma.TicketWhereInput = {
@@ -343,7 +413,12 @@ export class TicketService {
 
     if (role === Role.CLIENT) {
       if (clientId && clientId !== user.sub) {
-        throw new ForbiddenException('Clients can only query their own tickets');
+        this.logger.warn(
+          `Cliente tentou listar tickets de outro cliente — userId: ${user.sub}, filterClientId: ${clientId}`,
+        );
+        throw new ForbiddenException(
+          'Clientes podem consultar apenas seus próprios tickets',
+        );
       }
 
       return {
@@ -356,75 +431,41 @@ export class TicketService {
     if (role === Role.ADMIN) {
       return {
         ...baseWhere,
-        companyId: user.companyId,
+        ...(companyId ? { companyId } : {}),
         ...(agentId ? { agentId } : {}),
         ...(clientId ? { clientId } : {}),
       };
     }
 
     if (role === Role.AGENT) {
-      const groupIds = await this.getAgentGroupIds(user.sub);
-      const visibilityScopes: Prisma.TicketWhereInput[] = [{
-        agentId: user.sub,
-      }];
-
-      if (groupIds.length > 0) {
-        visibilityScopes.push({
-          supportGroupId: {
-            in: groupIds,
-          },
-        });
-      }
-
       return {
         ...baseWhere,
-        OR: visibilityScopes,
+        ...(companyId ? { companyId } : {}),
         ...(agentId ? { agentId } : {}),
         ...(clientId ? { clientId } : {}),
       };
     }
 
-    throw new ForbiddenException('Invalid user role');
+    this.logger.warn(`Perfil de usuário inválido para listagem — role: ${user.role}`);
+    throw new ForbiddenException('Perfil de usuário inválido');
   }
 
-  private async assertTicketVisibility(
+  private assertTicketVisibility(
     ticket: TicketWithRelations,
     user: UserPayload,
   ) {
     const role = this.getRole(user);
 
     if (role === Role.CLIENT && ticket.clientId !== user.sub) {
-      throw new ForbiddenException('You do not have access to this ticket');
-    }
-
-    if (role === Role.ADMIN && ticket.companyId !== user.companyId) {
-      throw new ForbiddenException('You do not have access to this ticket');
+      this.logger.warn(
+        `Cliente sem acesso tentou consultar ticket — ticketId: ${ticket.id}, userId: ${user.sub}, ownerId: ${ticket.clientId}`,
+      );
+      throw new ForbiddenException('Você não tem acesso a este ticket');
     }
 
     if (role === Role.AGENT) {
-      if (ticket.agentId === user.sub) {
-        return;
-      }
-
-      const supportGroupId = ticket.supportGroupId;
-      if (!supportGroupId) {
-        throw new ForbiddenException('You do not have access to this ticket');
-      }
-
-      const groupIds = await this.getAgentGroupIds(user.sub);
-      if (!groupIds.includes(supportGroupId)) {
-        throw new ForbiddenException('You do not have access to this ticket');
-      }
+      return;
     }
-  }
-
-  private async getAgentGroupIds(agentId: string): Promise<string[]> {
-    const groups = await this.prisma.agentGroup.findMany({
-      where: { agentId },
-      select: { supportGroupId: true },
-    });
-
-    return groups.map((group) => group.supportGroupId);
   }
 
   private getRole(user: UserPayload): Role {
@@ -432,26 +473,35 @@ export class TicketService {
     if (user.role === Role.AGENT) return Role.AGENT;
     if (user.role === Role.ADMIN) return Role.ADMIN;
 
-    throw new ForbiddenException('Invalid user role');
+    this.logger.warn(`Role inválido recebido no token — role: ${user.role}`);
+    throw new ForbiddenException('Perfil de usuário inválido');
   }
 
   private async validateSupportGroup(supportGroupId: string): Promise<void> {
     const supportGroup = await this.supportGroupRepository.findById(supportGroupId);
     if (!supportGroup) {
-      throw new NotFoundException(`Support Group ${supportGroupId} not found`);
+      this.logger.warn(`Grupo de suporte não encontrado — id: ${supportGroupId}`);
+      throw new NotFoundException(
+        `Grupo de suporte ${supportGroupId} não encontrado`,
+      );
     }
     if (!supportGroup.isActive) {
-      throw new BadRequestException('Support Group is not active');
+      this.logger.warn(`Grupo de suporte inativo — id: ${supportGroupId}`);
+      throw new BadRequestException('Grupo de suporte está inativo');
     }
   }
 
   private async validateSubject(subjectId: string): Promise<void> {
     const subject = await this.ticketSubjectRepository.findById(subjectId);
     if (!subject) {
-      throw new NotFoundException(`Ticket Subject ${subjectId} not found`);
+      this.logger.warn(`Assunto do ticket não encontrado — id: ${subjectId}`);
+      throw new NotFoundException(
+        `Assunto do ticket ${subjectId} não encontrado`,
+      );
     }
     if (!subject.isActive) {
-      throw new BadRequestException('Ticket Subject is not active');
+      this.logger.warn(`Assunto do ticket inativo — id: ${subjectId}`);
+      throw new BadRequestException('Assunto do ticket está inativo');
     }
   }
 
@@ -473,8 +523,11 @@ export class TicketService {
 
     const allowedTransitions = validTransitions[currentStatus] || [];
     if (!allowedTransitions.includes(newStatus)) {
+      this.logger.warn(
+        `Transição de status inválida — de: ${currentStatus}, para: ${newStatus}`,
+      );
       throw new BadRequestException(
-        `Invalid status transition from ${currentStatus} to ${newStatus}`,
+        `Transição de status inválida de ${currentStatus} para ${newStatus}`,
       );
     }
   }
