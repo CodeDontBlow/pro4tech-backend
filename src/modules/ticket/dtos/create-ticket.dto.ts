@@ -1,25 +1,15 @@
 import {
-  IsOptional,
-  IsString,
   IsEnum,
   IsUUID,
   IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { TicketPriority } from '../../../../generated/prisma/enums';
 
 export class CreateTicketDto {
   @ApiProperty({
-    example: 'company-123',
-    description: 'Company ID (UUID)',
-    required: true,
-  })
-  @IsUUID(undefined, { message: 'Company ID must be a valid UUID' })
-  @IsNotEmpty({ message: 'Company ID is required' })
-  companyId: string;
-
-  @ApiProperty({
-    example: 'user-456',
+    example: 'd6481f48-1f3e-4fd3-8ad0-68066ccbd413',
     description: 'Client ID who is opening the ticket (UUID)',
     required: true,
   })
@@ -28,34 +18,32 @@ export class CreateTicketDto {
   clientId: string;
 
   @ApiProperty({
-    example: 'group-789',
-    description: 'Support Group ID (UUID) - optional',
-    required: false,
-    nullable: true,
+    example: 'f3c86ae4-7dbf-4f11-bf0a-5cc00ea259ec',
+    description: 'Support Group ID selected after triage (UUID)',
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'Support Group ID is required' })
   @IsUUID(undefined, { message: 'Support Group ID must be a valid UUID' })
-  supportGroupId?: string;
+  supportGroupId: string;
 
   @ApiProperty({
-    example: 'subject-111',
-    description: 'Ticket Subject ID (UUID) - optional',
-    required: false,
-    nullable: true,
+    example: '4f2f77ce-dddd-47e5-93ea-81c1f0fa542f',
+    description: 'Ticket Subject ID selected after triage (UUID)',
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'Subject ID is required' })
   @IsUUID(undefined, { message: 'Subject ID must be a valid UUID' })
-  subjectId?: string;
+  subjectId: string;
 
   @ApiProperty({
     example: 'HIGH',
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'],
+    enum: TicketPriority,
     description: 'Priority level - optional, default to null',
     required: false,
     nullable: true,
   })
   @IsOptional()
-  @IsEnum(['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'], {
+  @IsEnum(TicketPriority, {
     message: 'Priority must be LOW, MEDIUM, HIGH, or HIGHEST',
   })
   priority?: TicketPriority;

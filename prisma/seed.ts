@@ -1751,8 +1751,8 @@ async function main() {
     },
     [
       {
-        name: 'Marcos Teixeira',
-        email: 'marcos.teixeira@uber-client.com',
+        name: 'client',
+        email: 'client@client.com',
         phone: '+5511999000101',
         role: Role.CLIENT,
       },

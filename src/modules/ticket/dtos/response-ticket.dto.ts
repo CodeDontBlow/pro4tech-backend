@@ -1,8 +1,80 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  SupportLevel,
   TicketStatus,
   TicketPriority,
 } from '../../../../generated/prisma/enums';
+
+class ResponseTicketClientDto {
+  @ApiProperty({
+    example: 'd6481f48-1f3e-4fd3-8ad0-68066ccbd413',
+    description: 'Client ID',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Maria Souza',
+    description: 'Client name',
+  })
+  name: string;
+}
+
+class ResponseTicketAgentDto {
+  @ApiProperty({
+    example: '2c0835d1-4036-4f40-a021-fdd033fc2f8d',
+    description: 'Agent ID',
+  })
+  id: string;
+
+  @ApiProperty({
+    enum: SupportLevel,
+    example: 'LEVEL_1',
+    description: 'Agent support level',
+  })
+  supportLevel: SupportLevel;
+}
+
+class ResponseTicketCompanyDto {
+  @ApiProperty({
+    example: 'f3c86ae4-7dbf-4f11-bf0a-5cc00ea259ec',
+    description: 'Company ID',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'ACME LTDA',
+    description: 'Company name',
+  })
+  name: string;
+}
+
+class ResponseTicketSupportGroupDto {
+  @ApiProperty({
+    example: '4f2f77ce-dddd-47e5-93ea-81c1f0fa542f',
+    description: 'Support group ID',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Atendimento N1',
+    description: 'Support group name',
+  })
+  name: string;
+}
+
+class ResponseTicketSubjectDto {
+  @ApiProperty({
+    example: 'f56fafad-842e-47d1-823f-5748e7df80c0',
+    description: 'Ticket subject ID',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Fatura',
+    description: 'Ticket subject name',
+  })
+  name: string;
+}
 
 export class ResponseTicketDto {
   @ApiProperty({
@@ -46,14 +118,14 @@ export class ResponseTicketDto {
 
   @ApiProperty({
     example: 'OPENED',
-    enum: ['TRIAGE', 'OPENED', 'ESCALATED', 'CLOSED', 'RESOLVED'],
+    enum: TicketStatus,
     description: 'Current status of the ticket',
   })
   status: TicketStatus;
 
   @ApiProperty({
     example: 'HIGH',
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'],
+    enum: TicketPriority,
     description: 'Priority level',
     nullable: true,
   })
@@ -92,10 +164,46 @@ export class ResponseTicketDto {
   })
   closedAt?: Date | null;
 
-  // Relations (optional - for includes)
-  client?: any;
-  agent?: any;
-  company?: any;
-  supportGroup?: any;
-  subject?: any;
+  @ApiProperty({
+    example: false,
+    description: 'Whether the ticket is archived',
+  })
+  isArchived: boolean;
+
+  @ApiProperty({
+    example: '2026-04-10T12:00:00Z',
+    description: 'When the ticket was soft deleted',
+    nullable: true,
+  })
+  deletedAt?: Date | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketClientDto,
+    description: 'Lightweight client data',
+  })
+  client?: ResponseTicketClientDto;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketAgentDto,
+    description: 'Lightweight agent data',
+  })
+  agent?: ResponseTicketAgentDto | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketCompanyDto,
+    description: 'Lightweight company data',
+  })
+  company?: ResponseTicketCompanyDto;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketSupportGroupDto,
+    description: 'Lightweight support group data',
+  })
+  supportGroup?: ResponseTicketSupportGroupDto | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketSubjectDto,
+    description: 'Lightweight subject data',
+  })
+  subject?: ResponseTicketSubjectDto | null;
 }

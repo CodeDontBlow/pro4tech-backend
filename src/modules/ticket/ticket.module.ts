@@ -9,6 +9,6 @@ import { TicketSubjectModule } from '../ticket-subject/ticket-subject.module';
   controllers: [TicketController],
   providers: [TicketService, TicketRepository],
   imports: [SupportGroupModule, TicketSubjectModule],
-  exports: [TicketService],
+  exports: [TicketService, TicketRepository],
 })
 export class TicketModule {}

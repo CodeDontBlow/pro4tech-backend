@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
@@ -24,9 +25,9 @@ import {
 } from 'src/common/decorators/auth-user.decorator';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import { Role } from 'generated/prisma/client';
+import { TicketStatus } from '../../../generated/prisma/enums';
 
 @ApiBearerAuth()
-@Roles(Role.AGENT, Role.ADMIN)
 @ApiTags('Ticket')
 @Controller('tickets')
 export class TicketController {
@@ -35,17 +36,21 @@ export class TicketController {
   /**
    * POST /tickets
    * Create a new ticket
-   * - supportGroupId and subjectId must come from TriageRule frontend triage
+   * - Subject and support group must come from frontend triage result
    */
   @Post()
+  @Roles(Role.CLIENT)
   @ApiOperation({ summary: 'Create a new ticket' })
   @ApiResponse({
     status: 201,
     description: 'Ticket created successfully',
     type: ResponseTicketDto,
   })
-  async create(@Body() dto: CreateTicketDto): Promise<ResponseTicketDto> {
-    return this.ticketService.createTicket(dto);
+  async create(
+    @Body() dto: CreateTicketDto,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.createTicket(dto, user);
   }
 
   /**
@@ -53,6 +58,13 @@ export class TicketController {
    * Get ticket by ID with all relationships
    */
   @Get(':id')
+  @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
+  @ApiQuery({
+    name: 'includeArchived',
+    required: false,
+    type: Boolean,
+    description: 'Set true to include archived tickets in lookup',
+  })
   @ApiOperation({ summary: 'Get ticket by ID' })
   @ApiResponse({
     status: 200,
@@ -60,8 +72,16 @@ export class TicketController {
     type: ResponseTicketDto,
   })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
-  async getById(@Param('id') ticketId: string): Promise<ResponseTicketDto> {
-    return this.ticketService.getTicket(ticketId);
+  async getById(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+    @Query('includeArchived') includeArchived?: string,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.getTicket(
+      ticketId,
+      user,
+      includeArchived === 'true',
+    );
   }
 
   /**
@@ -69,6 +89,31 @@ export class TicketController {
    * List tickets with optional filters
    */
   @Get()
+  @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TicketStatus,
+    description: 'Filter by ticket status',
+  })
+  @ApiQuery({
+    name: 'agentId',
+    required: false,
+    type: String,
+    description: 'Filter by assigned agent id',
+  })
+  @ApiQuery({
+    name: 'clientId',
+    required: false,
+    type: String,
+    description: 'Filter by client id',
+  })
+  @ApiQuery({
+    name: 'includeArchived',
+    required: false,
+    type: Boolean,
+    description: 'Set true to include archived tickets',
+  })
   @ApiOperation({ summary: 'List tickets with optional filters' })
   @ApiResponse({
     status: 200,
@@ -76,25 +121,27 @@ export class TicketController {
     type: [ResponseTicketDto],
   })
   async list(
-    @Query('status') status?: string,
-    @Query('companyId') companyId?: string,
+    @AuthUser() user: UserPayload,
+    @Query('status') status?: TicketStatus,
     @Query('agentId') agentId?: string,
     @Query('clientId') clientId?: string,
+    @Query('includeArchived') includeArchived?: string,
   ): Promise<ResponseTicketDto[]> {
     return this.ticketService.listTickets({
-      status: status as any,
-      companyId,
+      user,
+      status,
       agentId,
       clientId,
+      includeArchived: includeArchived === 'true',
     });
   }
 
   /**
    * PATCH /tickets/:id
    * Update ticket (status, priority, rating, etc.)
-   * Security: Only assigned agent can update their own tickets to CLOSED status
    */
   @Patch(':id')
+  @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
   @ApiOperation({ summary: 'Update ticket' })
   @ApiResponse({
     status: 200,
@@ -115,18 +162,52 @@ export class TicketController {
     @Body() dto: UpdateTicketDto,
     @AuthUser() user: UserPayload,
   ): Promise<ResponseTicketDto> {
-    return this.ticketService.updateTicket(ticketId, dto, user.sub);
+    return this.ticketService.updateTicket(ticketId, dto, user);
+  }
+
+  @Patch(':id/archive')
+  @Roles(Role.AGENT, Role.ADMIN)
+  @ApiOperation({ summary: 'Archive ticket' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ticket archived successfully',
+    type: ResponseTicketDto,
+  })
+  async archive(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.archiveTicket(ticketId, user);
+  }
+
+  @Patch(':id/unarchive')
+  @Roles(Role.AGENT, Role.ADMIN)
+  @ApiOperation({ summary: 'Unarchive ticket' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ticket unarchived successfully',
+    type: ResponseTicketDto,
+  })
+  async unarchive(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.unarchiveTicket(ticketId, user);
   }
 
   /**
    * DELETE /tickets/:id
-   * Delete ticket
+   * Soft delete ticket
    */
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete ticket' })
   @ApiResponse({ status: 204, description: 'Ticket deleted successfully' })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
-  async delete(@Param('id') ticketId: string): Promise<void> {
-    return this.ticketService.deleteTicket(ticketId);
+  async delete(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<void> {
+    return this.ticketService.deleteTicket(ticketId, user);
   }
 }

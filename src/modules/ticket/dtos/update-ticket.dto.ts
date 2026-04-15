@@ -1,4 +1,11 @@
-import { IsOptional, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsInt,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   TicketStatus,
@@ -20,13 +27,13 @@ export class UpdateTicketDto {
 
   @ApiProperty({
     example: 'HIGH',
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'],
+    enum: TicketPriority,
     description: 'Priority level',
     required: false,
     nullable: true,
   })
   @IsOptional()
-  @IsEnum(['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'], {
+  @IsEnum(TicketPriority, {
     message: 'Priority must be LOW, MEDIUM, HIGH, or HIGHEST',
   })
   priority?: TicketPriority;
@@ -38,7 +45,7 @@ export class UpdateTicketDto {
     nullable: true,
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt({ message: 'Rating score must be an integer' })
   @Min(0, { message: 'Rating score must be at least 0' })
   @Max(5, { message: 'Rating score must not exceed 5' })
   ratingScore?: number;
@@ -50,5 +57,6 @@ export class UpdateTicketDto {
     nullable: true,
   })
   @IsOptional()
+  @IsString({ message: 'Rating comment must be a valid string' })
   ratingComment?: string;
 }
