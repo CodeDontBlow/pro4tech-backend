@@ -1,41 +1,19 @@
 ## 🎯 Objetivo
-
 <!-- Explique por que este PR foi criado e qual seu propósito central.
-
 Exemplos:
-
 - Implementação do módulo de chat via WebSocket
 - Correção do escalonamento entre grupos de atendimento
 - Refatoração da lógica de triagem automatizada -->
-
-<!-- ## #️⃣ Issues relacionadas (opcional)
-
-Vincule tarefas do Jira ou issues do GitHub:
-
-```
-resolves PRO4-42
-resolves <https://github.com/><org>/<repo>/issues/<issue_number>
-```
-
 ---
 
-## 🐛 Causa do bug (opcional — apenas fix)
-
-Descreva a causa técnica raiz.
-
---- -->
-
 ## 📋 Changelog
-
 <!-- Lista técnica das mudanças:
-
 - arquivos alterados
 - comportamento modificado
 - regras adicionadas
 - refatorações feitas -->
 
 ## 🧪 Como testar
-
 <!-- Passo a passo claro para o revisor validar: -->
 
 1.
@@ -43,15 +21,6 @@ Descreva a causa técnica raiz.
 3.
 
 ---
-
-<!-- ## 👀 Observações (opcional)
-
-- decisões de arquitetura
-- limitações conhecidas
-- tradeoffs
-- próximos passos
-
---- -->
 
 <!-- ## Exemplo de PR Completo
 

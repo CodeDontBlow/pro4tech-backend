@@ -38,6 +38,10 @@ enum TicketPriority {
 enum TicketAction {
     ESCALATION
     RETURN
+    STATUS_CHANGE
+    ARCHIVE
+    UNARCHIVE
+    SOFT_DELETE
 }
 
 enum SupportLevel {
@@ -144,6 +148,8 @@ model Ticket {
     createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
     closedAt        DateTime?
+    isArchived      Boolean         @default(false)
+    deletedAt       DateTime?
     
     client          User            @relation("ClientTicket", fields: [clientId], references: [id])
     agent           Agent?          @relation("AgentTicket", fields: [agentId], references: [id])
@@ -151,6 +157,12 @@ model Ticket {
     supportGroup    SupportGroup?   @relation(fields: [supportGroupId], references: [id])
     subject         TicketSubject?  @relation(fields: [subjectId], references: [id])   
     ticketHistories TicketHistory[]
+
+    @@index([companyId, isArchived, deletedAt])
+    @@index([clientId, isArchived, deletedAt])
+    @@index([agentId, isArchived, deletedAt])
+    @@index([supportGroupId, isArchived, deletedAt])
+    @@index([status, isArchived, deletedAt])
 }
 
 model TicketHistory {

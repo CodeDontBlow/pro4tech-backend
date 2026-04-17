@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Role, SupportLevel } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import { v7 as uuidv7 } from 'uuid';
+import { generateCompanyAccessCode } from '../src/modules/accessCode/access-code.util';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -148,8 +149,8 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     groupNames: ['Geral'],
   },
   {
-    name: 'Fernanda Lima',
-    email: 'fernanda.lima@pro4tech.com',
+    name: 'agent',
+    email: 'agent@agent.com',
     phone: '+5511999000003',
     role: Role.AGENT,
     supportLevel: SupportLevel.LEVEL_1,
@@ -1211,7 +1212,7 @@ async function wipeDatabase() {
 }
 
 async function upsertCompany(data: CompanySeed) {
-  const accessCode = uuidv7();
+  const accessCode = generateCompanyAccessCode();
   return prisma.company.upsert({
     where: { cnpj: data.cnpj },
     update: {
@@ -1751,8 +1752,8 @@ async function main() {
     },
     [
       {
-        name: 'Marcos Teixeira',
-        email: 'marcos.teixeira@uber-client.com',
+        name: 'client',
+        email: 'client@client.com',
         phone: '+5511999000101',
         role: Role.CLIENT,
       },

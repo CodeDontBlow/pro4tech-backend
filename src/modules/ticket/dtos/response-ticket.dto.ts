@@ -1,101 +1,249 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  SupportLevel,
   TicketStatus,
   TicketPriority,
 } from '../../../../generated/prisma/enums';
 
-export class ResponseTicketDto {
+class ResponseTicketClientDto {
   @ApiProperty({
-    example: '1a2b3c4d-5e6f-7890-abcd-1234567890ab',
-    description: 'Ticket ID (UUID)',
+    example: '',
+    description: 'ID do cliente',
   })
   id: string;
 
   @ApiProperty({
-    example: 'company-123',
-    description: 'Company ID associated with this ticket',
+    example: 'Maria Souza',
+    description: 'Nome do cliente',
+  })
+  name: string;
+}
+
+class ResponseTicketAgentDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID do agente',
+  })
+  id: string;
+
+  @ApiProperty({
+    enum: SupportLevel,
+    example: 'LEVEL_1',
+    description: 'Nível de suporte do agente',
+  })
+  supportLevel: SupportLevel;
+}
+
+class ResponseTicketCompanyDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID da empresa',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'ACME LTDA',
+    description: 'Nome da empresa',
+  })
+  name: string;
+}
+
+class ResponseTicketSupportGroupDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID do grupo de suporte',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Atendimento N1',
+    description: 'Nome do grupo de suporte',
+  })
+  name: string;
+}
+
+class ResponseTicketSubjectDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID do assunto do ticket',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: 'Fatura',
+    description: 'Nome do assunto do ticket',
+  })
+  name: string;
+}
+
+export class ResponseTicketDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID do ticket (UUID)',
+  })
+  id: string;
+
+  @ApiProperty({
+    example: '',
+    description: 'ID da empresa associada ao ticket',
   })
   companyId: string;
 
   @ApiProperty({
-    example: 'user-456',
-    description: 'Client ID who opened this ticket',
+    example: '',
+    description: 'ID do cliente que abriu o ticket',
   })
   clientId: string;
 
   @ApiProperty({
-    example: 'agent-789',
-    description: 'Agent ID assigned to this ticket',
+    example: '',
+    description: 'ID do agente atribuído ao ticket',
     nullable: true,
   })
   agentId?: string | null;
 
   @ApiProperty({
-    example: 'group-111',
-    description: 'Support Group ID',
+    example: '',
+    description: 'ID do grupo de suporte',
     nullable: true,
   })
   supportGroupId?: string | null;
 
   @ApiProperty({
-    example: 'subject-222',
-    description: 'Ticket Subject ID',
+    example: '',
+    description: 'ID do assunto do ticket',
     nullable: true,
   })
   subjectId?: string | null;
 
   @ApiProperty({
     example: 'OPENED',
-    enum: ['TRIAGE', 'OPENED', 'ESCALATED', 'CLOSED', 'RESOLVED'],
-    description: 'Current status of the ticket',
+    enum: TicketStatus,
+    description: 'Status atual do ticket',
   })
   status: TicketStatus;
 
   @ApiProperty({
     example: 'HIGH',
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'HIGHEST'],
-    description: 'Priority level',
+    enum: TicketPriority,
+    description: 'Nível de prioridade',
     nullable: true,
   })
   priority?: TicketPriority | null;
 
   @ApiProperty({
     example: 5,
-    description: 'Rating score (0-5)',
+    description: 'Nota de avaliação (0-5)',
     nullable: true,
   })
   ratingScore?: number | null;
 
   @ApiProperty({
     example: 'Great service!',
-    description: 'Rating comment from client',
+    description: 'Comentário de avaliação do cliente',
     nullable: true,
   })
   ratingComment?: string | null;
 
   @ApiProperty({
     example: '2026-04-04T10:00:00Z',
-    description: 'When the ticket was created',
+    description: 'Data/hora de criação do ticket',
   })
   createdAt: Date;
 
   @ApiProperty({
     example: '2026-04-04T11:30:00Z',
-    description: 'Last time the ticket was updated',
+    description: 'Data/hora da última atualização do ticket',
   })
   updatedAt: Date;
 
   @ApiProperty({
     example: '2026-04-04T12:00:00Z',
-    description: 'When the ticket was closed',
+    description: 'Data/hora de fechamento do ticket',
     nullable: true,
   })
   closedAt?: Date | null;
 
-  // Relations (optional - for includes)
-  client?: any;
-  agent?: any;
-  company?: any;
-  supportGroup?: any;
-  subject?: any;
+  @ApiProperty({
+    example: false,
+    description: 'Indica se o ticket está arquivado',
+  })
+  isArchived: boolean;
+
+  @ApiProperty({
+    example: '2026-04-10T12:00:00Z',
+    description: 'Data/hora da exclusão lógica do ticket',
+    nullable: true,
+  })
+  deletedAt?: Date | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketClientDto,
+    description: 'Dados reduzidos do cliente',
+  })
+  client?: ResponseTicketClientDto;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketAgentDto,
+    description: 'Dados reduzidos do agente',
+  })
+  agent?: ResponseTicketAgentDto | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketCompanyDto,
+    description: 'Dados reduzidos da empresa',
+  })
+  company?: ResponseTicketCompanyDto;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketSupportGroupDto,
+    description: 'Dados reduzidos do grupo de suporte',
+  })
+  supportGroup?: ResponseTicketSupportGroupDto | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketSubjectDto,
+    description: 'Dados reduzidos do assunto',
+  })
+  subject?: ResponseTicketSubjectDto | null;
+}
+
+class ResponseTicketPaginationMetaDto {
+  @ApiProperty({
+    example: 42,
+    description: 'Quantidade total de tickets encontrados',
+  })
+  total: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Página atual',
+  })
+  page: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Última página disponível',
+  })
+  lastPage: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Quantidade de registros por página',
+  })
+  limit: number;
+}
+
+export class ResponseTicketPaginationDto {
+  @ApiProperty({
+    type: [ResponseTicketDto],
+    description: 'Tickets retornados na página atual',
+  })
+  data: ResponseTicketDto[];
+
+  @ApiProperty({
+    type: ResponseTicketPaginationMetaDto,
+    description: 'Metadados de paginação',
+  })
+  meta: ResponseTicketPaginationMetaDto;
 }

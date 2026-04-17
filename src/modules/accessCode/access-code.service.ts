@@ -4,8 +4,8 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
 import * as QRCode from 'qrcode';
+import { generateCompanyAccessCode } from './access-code.util';
 
 export interface ReturnQr {
   id: string;
@@ -31,7 +31,7 @@ export class AccessCodeService {
       throw new BadRequestException('Company name is required.');
     }
 
-    const id = this.generateId();
+    const id = generateCompanyAccessCode();
     const text = `ID:${id};CMP:${company}`;
 
     try {
@@ -39,14 +39,12 @@ export class AccessCodeService {
       this.logger.log(`QR Code generated - ID: ${id}, Company: ${company}`);
       return { id, image };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Failed to generate QR for company ${company}: ${error.message}`,
+        `Failed to generate QR for company ${company}: ${errorMessage}`,
       );
       throw new InternalServerErrorException('Generation failed.');
     }
-  }
-
-  private generateId(): string {
-    return randomBytes(4).toString('hex').toUpperCase();
   }
 }
