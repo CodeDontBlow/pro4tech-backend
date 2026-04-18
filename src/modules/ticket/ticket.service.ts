@@ -219,6 +219,87 @@ export class TicketService {
     return updatedTicket;
   }
 
+  async assignTicketToMe(ticketId: string, user: UserPayload) {
+    const role = this.getRole(user);
+    if (role !== Role.AGENT) {
+      this.logger.warn(
+        `Perfil sem permissão tentou se atribuir ao ticket — ticketId: ${ticketId}, userId: ${user.sub}, role: ${role}`,
+      );
+      throw new ForbiddenException('Apenas agentes podem assumir tickets');
+    }
+
+    const ticket = await this.ticketRepository.findById(ticketId, {
+      includeArchived: true,
+      includeDeleted: true,
+    });
+
+    if (!ticket) {
+      this.logger.warn(`Ticket não encontrado para autoatribuição — id: ${ticketId}`);
+      throw new NotFoundException('Ticket não encontrado');
+    }
+
+    if (ticket.deletedAt) {
+      this.logger.warn(
+        `Tentativa de assumir ticket excluído logicamente — ticketId: ${ticketId}, userId: ${user.sub}`,
+      );
+      throw new BadRequestException('Tickets excluídos não podem ser assumidos');
+    }
+
+    if (ticket.isArchived) {
+      this.logger.warn(
+        `Tentativa de assumir ticket arquivado — ticketId: ${ticketId}, userId: ${user.sub}`,
+      );
+      throw new BadRequestException('Tickets arquivados não podem ser assumidos');
+    }
+
+    await this.assertTicketVisibility(ticket, user);
+
+    if (ticket.agentId && ticket.agentId !== user.sub) {
+      this.logger.warn(
+        `Agente tentou assumir ticket já atribuído — ticketId: ${ticketId}, userId: ${user.sub}, assignedAgentId: ${ticket.agentId}`,
+      );
+      throw new ForbiddenException('Este ticket já foi assumido por outro agente');
+    }
+
+    if (ticket.agentId === user.sub) {
+      this.logger.log(
+        `Agente já estava atribuído ao ticket — ticketId: ${ticketId}, userId: ${user.sub}`,
+      );
+      return ticket;
+    }
+
+    const shouldOpenTicket = ticket.status === TicketStatus.TRIAGE;
+    const nextStatus = shouldOpenTicket ? TicketStatus.OPENED : ticket.status;
+
+    const updateData: Prisma.TicketUpdateInput = {
+      agent: {
+        connect: {
+          id: user.sub,
+        },
+      },
+      ...(shouldOpenTicket ? { status: TicketStatus.OPENED } : {}),
+    };
+
+    const updatedTicket = await this.ticketRepository.update(ticketId, updateData);
+
+    await this.ticketRepository.createHistory({
+      ticketId,
+      actionType: TicketAction.STATUS_CHANGE,
+      fromStatus: ticket.status,
+      toStatus: nextStatus,
+      fromGroupId: ticket.supportGroupId,
+      toGroupId: ticket.supportGroupId,
+      fromAgentId: ticket.agentId,
+      toAgentId: user.sub,
+    });
+
+    this.logger.log(
+      `Ticket assumido por agente — ticketId: ${ticketId}, agentId: ${user.sub}, status: ${ticket.status} -> ${nextStatus}`,
+    );
+
+    return updatedTicket;
+  }
+
   async getTicket(
     ticketId: string,
     user: UserPayload,

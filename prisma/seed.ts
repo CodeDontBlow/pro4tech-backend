@@ -155,7 +155,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     role: Role.AGENT,
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
-    groupNames: ['Geral'],
+    groupNames: SUPPORT_GROUPS.map((group) => group.name),
   },
   {
     name: 'Bruno Araujo',
@@ -1643,54 +1643,45 @@ async function seedAgentGroupAssignments(
   const assignmentKeys = new Set<string>();
 
   for (const agent of agents) {
-    if (agent.groupNames.length !== 1) {
+    if (agent.groupNames.length === 0) {
       throw new Error(
-        `Agent ${agent.email} must have exactly one support group assignment`,
+        `Agent ${agent.email} must have at least one support group assignment`,
       );
     }
 
-    const [groupName] = agent.groupNames;
-    const isAllowedGroup = REQUIRED_GROUP_NAMES.some(
-      (requiredGroupName) => requiredGroupName === groupName,
-    );
+    for (const groupName of agent.groupNames) {
+      const supportGroupId = supportGroupIdsByName.get(groupName);
+      if (!supportGroupId) {
+        throw new Error(
+          `Support group "${groupName}" was not found for agent ${agent.email}`,
+        );
+      }
 
-    if (!isAllowedGroup) {
-      throw new Error(
-        `Agent ${agent.email} has invalid group "${groupName}". Allowed groups: ${REQUIRED_GROUP_NAMES.join(', ')}`,
-      );
-    }
+      const dedupKey = `${agent.id}:${supportGroupId}`;
+      if (assignmentKeys.has(dedupKey)) {
+        continue;
+      }
 
-    const supportGroupId = supportGroupIdsByName.get(groupName);
-    if (!supportGroupId) {
-      throw new Error(
-        `Support group "${groupName}" was not found for agent ${agent.email}`,
-      );
-    }
+      assignmentKeys.add(dedupKey);
 
-    const dedupKey = `${agent.id}:${supportGroupId}`;
-    if (assignmentKeys.has(dedupKey)) {
-      continue;
-    }
-
-    assignmentKeys.add(dedupKey);
-
-    await prisma.agentGroup.upsert({
-      where: {
-        agentId_supportGroupId: {
+      await prisma.agentGroup.upsert({
+        where: {
+          agentId_supportGroupId: {
+            agentId: agent.id,
+            supportGroupId,
+          },
+        },
+        update: {
+          assignedAt: new Date(),
+        },
+        create: {
           agentId: agent.id,
           supportGroupId,
         },
-      },
-      update: {
-        assignedAt: new Date(),
-      },
-      create: {
-        agentId: agent.id,
-        supportGroupId,
-      },
-    });
+      });
 
-    persistedAssignments += 1;
+      persistedAssignments += 1;
+    }
   }
 
   console.log(`✅ Agent groups seeded (${persistedAssignments} assignments)`);

@@ -26,6 +26,6 @@ import { ConfigService } from '@nestjs/config';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

@@ -36,9 +36,19 @@ services:
       timeout: 5s
       retries: 5
 
+  mongo:
+    image: mongo:7
+    container_name: pro4tech_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
 volumes:
   postgres_data:
     name: pro4tech_postgres_data
+  mongo_data:
+    name: pro4tech_mongo_data
   # node_modules_cache:
   #   name: pro4tech_node_modules
 
