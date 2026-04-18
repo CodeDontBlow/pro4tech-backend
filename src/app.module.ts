@@ -17,7 +17,7 @@ import { ChatModule } from './modules/chat/chat.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(
-      process.env.MONGO_URI ?? 'mongodb://localhost:27017/orbita-chat',
+      process.env.MONGO_URI 
     ),
     PrismaModule,
     AuthModule,
