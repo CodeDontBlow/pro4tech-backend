@@ -6,9 +6,14 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SupportGroupService } from './support-group.service';
 import { CreateSupportGroupDto } from './dtos/create-support-group.dto';
 import { UpdateSupportGroupDto } from './dtos/update-support-group.dto';
@@ -31,9 +36,26 @@ export class SupportGroupController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all groups' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: 'List all groups (paginated)' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Items per page (default: 10, max: 100)',
+  })
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.service.findAll(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+    );
   }
 
   @Get(':id')
