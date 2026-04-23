@@ -6,14 +6,27 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
+  Query,
+  ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { SupportGroupService } from './support-group.service';
 import { CreateSupportGroupDto } from './dtos/create-support-group.dto';
 import { UpdateSupportGroupDto } from './dtos/update-support-group.dto';
 import { Role } from 'generated/prisma/client';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
+import {
+  AuthUser,
+  UserPayload,
+} from 'src/common/decorators/auth-user.decorator';
+import { FindAvailableAgentsQueryDto } from './dtos/find-available-agents-query.dto';
+import { ResponseAvailableAgentsDto } from './dtos/response-available-agents.dto';
 
 //swagger
 @ApiTags('support-group')
@@ -34,6 +47,35 @@ export class SupportGroupController {
   @ApiOperation({ summary: 'List all groups' })
   findAll() {
     return this.service.findAll();
+  }
+
+  @Get('me/agents/available')
+  @ApiOperation({
+    summary: 'List available agents from visible support groups',
+  })
+  @ApiQuery({
+    name: 'supportGroupId',
+    required: false,
+    type: String,
+    description:
+      'Optional support group id used to narrow the result inside your authorization scope.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Available agents listed successfully',
+    type: ResponseAvailableAgentsDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You are not allowed to read this support group availability',
+  })
+  @ApiResponse({ status: 404, description: 'Support group not found' })
+  findAvailableAgents(
+    @AuthUser() user: UserPayload,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: FindAvailableAgentsQueryDto,
+  ): Promise<ResponseAvailableAgentsDto> {
+    return this.service.findAvailableAgents(user, query.supportGroupId);
   }
 
   @Get(':id')
