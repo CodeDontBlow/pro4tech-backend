@@ -178,6 +178,26 @@ export class TicketController {
    * PATCH /tickets/:id
    * Atualizar ticket (status, prioridade, avaliação, etc.)
    */
+  @Patch(':id/assign-self')
+  @Roles(Role.AGENT)
+  @ApiOperation({ summary: 'Agente assume o ticket para si' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ticket atribuído ao agente com sucesso',
+    type: ResponseTicketDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Apenas agentes podem assumir tickets',
+  })
+  @ApiResponse({ status: 404, description: 'Ticket não encontrado' })
+  async assignToMe(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.assignTicketToMe(ticketId, user);
+  }
+
   @Patch(':id')
   @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar ticket' })
