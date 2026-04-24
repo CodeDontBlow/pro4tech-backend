@@ -19,6 +19,8 @@ import {
   ResponseAvailabilityGroupDto,
   ResponseAvailableAgentsSummaryDto,
 } from './dtos/response-available-agents.dto';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
+import { SupportGroup } from 'generated/prisma/client';
 
 @Injectable()
 export class SupportGroupService {
@@ -33,12 +35,30 @@ export class SupportGroupService {
       throw new ConflictException('A group with this name already exists.');
     }
 
-    const id = uuidv7();
+    const generateUuidV7 = uuidv7 as unknown as () => string;
+    const id = generateUuidV7();
     return this.repository.create(id, dto);
   }
 
-  async findAll() {
-    return this.repository.findAll();
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<ResponsePaginationDto<SupportGroup>> {
+    const normalizedPage = this.normalizePage(page);
+    const normalizedLimit = this.normalizeLimit(limit);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const [groups, total] = await Promise.all([
+      this.repository.findAll({ skip, take: normalizedLimit }),
+      this.repository.count(),
+    ]);
+
+    return new ResponsePaginationDto(
+      groups,
+      total,
+      normalizedPage,
+      normalizedLimit,
+    );
   }
 
   async findOne(id: string) {
@@ -99,9 +119,9 @@ export class SupportGroupService {
     const targetGroupIds = supportGroupId ? [supportGroupId] : visibleGroupIds;
     const availableAgentMemberships =
       await this.repository.findAvailableAgentMemberships(
-      user.companyId,
-      targetGroupIds,
-    );
+        user.companyId,
+        targetGroupIds,
+      );
 
     return this.mapToAvailabilitySummaryResponse(availableAgentMemberships);
   }
@@ -119,9 +139,9 @@ export class SupportGroupService {
 
     const availableAgentMemberships =
       await this.repository.findAvailableAgentMemberships(
-      user.companyId,
-      supportGroupId ? [supportGroupId] : undefined,
-    );
+        user.companyId,
+        supportGroupId ? [supportGroupId] : undefined,
+      );
 
     return this.mapToAvailabilitySummaryResponse(availableAgentMemberships);
   }
@@ -182,7 +202,29 @@ export class SupportGroupService {
       return Role.ADMIN;
     }
 
-    this.logger.warn(`Invalid user role for support-group availability: ${user.role}`);
-    throw new ForbiddenException('User profile is not allowed for this operation');
+    this.logger.warn(
+      `Invalid user role for support-group availability: ${user.role}`,
+    );
+    throw new ForbiddenException(
+      'User profile is not allowed for this operation',
+    );
+  }
+
+  private normalizePage(page: number): number {
+    if (!Number.isFinite(page) || page < 1) {
+      return 1;
+    }
+
+    return Math.floor(page);
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit < 1) {
+      return 10;
+    }
+
+    const normalizedLimit = Math.floor(limit);
+    return Math.min(normalizedLimit, 100);
   }
 }
+

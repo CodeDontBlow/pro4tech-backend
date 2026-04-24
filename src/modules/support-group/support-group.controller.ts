@@ -28,10 +28,8 @@ import {
 import { FindAvailabilitySummaryQueryDto } from './dtos/find-availability-summary-query.dto';
 import { ResponseAvailableAgentsSummaryDto } from './dtos/response-available-agents.dto';
 
-//swagger
 @ApiTags('support-group')
 @ApiBearerAuth()
-//guard
 @Roles(Role.ADMIN, Role.AGENT)
 @Controller('support-groups')
 export class SupportGroupController {
@@ -44,9 +42,26 @@ export class SupportGroupController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all groups' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: 'List all groups (paginated)' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Items per page (default: 10, max: 100)',
+  })
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.service.findAll(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+    );
   }
 
   @Get('me/agents/availability-summary')
@@ -96,3 +111,4 @@ export class SupportGroupController {
     return this.service.remove(id);
   }
 }
+
