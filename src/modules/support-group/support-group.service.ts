@@ -8,15 +8,16 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 import { Role } from 'generated/prisma/client';
 import {
-  AvailableAgentRecord,
+  AvailableAgentMembershipRecord,
   SupportGroupRepository,
 } from './support-group.repository';
 import { CreateSupportGroupDto } from './dtos/create-support-group.dto';
 import { UpdateSupportGroupDto } from './dtos/update-support-group.dto';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import {
-  ResponseAvailableAgentDto,
-  ResponseAvailableAgentsDto,
+  ResponseAvailabilityGroupAgentDto,
+  ResponseAvailabilityGroupDto,
+  ResponseAvailableAgentsSummaryDto,
 } from './dtos/response-available-agents.dto';
 
 @Injectable()
@@ -59,30 +60,30 @@ export class SupportGroupService {
     });
   }
 
-  async findAvailableAgents(
+  async findAvailabilitySummary(
     user: UserPayload,
     supportGroupId?: string,
-  ): Promise<ResponseAvailableAgentsDto> {
+  ): Promise<ResponseAvailableAgentsSummaryDto> {
     const role = this.getRole(user);
 
     if (role === Role.AGENT) {
-      return this.findAvailableAgentsForAgent(user, supportGroupId);
+      return this.findAvailabilitySummaryForAgent(user, supportGroupId);
     }
 
-    return this.findAvailableAgentsForAdmin(user, supportGroupId);
+    return this.findAvailabilitySummaryForAdmin(user, supportGroupId);
   }
 
-  private async findAvailableAgentsForAgent(
+  private async findAvailabilitySummaryForAgent(
     user: UserPayload,
     supportGroupId?: string,
-  ): Promise<ResponseAvailableAgentsDto> {
+  ): Promise<ResponseAvailableAgentsSummaryDto> {
     const visibleGroupIds =
       await this.repository.findVisibleSupportGroupIdsByAgentId(user.sub);
 
     if (visibleGroupIds.length === 0) {
       return {
-        total: 0,
-        agents: [],
+        totalUniqueAvailableAgents: 0,
+        groups: [],
       };
     }
 
@@ -96,18 +97,19 @@ export class SupportGroupService {
     }
 
     const targetGroupIds = supportGroupId ? [supportGroupId] : visibleGroupIds;
-    const availableAgents = await this.repository.findAvailableAgents(
+    const availableAgentMemberships =
+      await this.repository.findAvailableAgentMemberships(
       user.companyId,
       targetGroupIds,
     );
 
-    return this.mapToAvailableAgentsResponse(availableAgents);
+    return this.mapToAvailabilitySummaryResponse(availableAgentMemberships);
   }
 
-  private async findAvailableAgentsForAdmin(
+  private async findAvailabilitySummaryForAdmin(
     user: UserPayload,
     supportGroupId?: string,
-  ): Promise<ResponseAvailableAgentsDto> {
+  ): Promise<ResponseAvailableAgentsSummaryDto> {
     if (supportGroupId) {
       const supportGroup = await this.repository.findActiveById(supportGroupId);
       if (!supportGroup) {
@@ -115,29 +117,59 @@ export class SupportGroupService {
       }
     }
 
-    const availableAgents = await this.repository.findAvailableAgents(
+    const availableAgentMemberships =
+      await this.repository.findAvailableAgentMemberships(
       user.companyId,
       supportGroupId ? [supportGroupId] : undefined,
     );
 
-    return this.mapToAvailableAgentsResponse(availableAgents);
+    return this.mapToAvailabilitySummaryResponse(availableAgentMemberships);
   }
 
-  private mapToAvailableAgentsResponse(
-    availableAgents: AvailableAgentRecord[],
-  ): ResponseAvailableAgentsDto {
-    const agents: ResponseAvailableAgentDto[] = availableAgents.map((agent) => ({
-      agentId: agent.id,
-      name: agent.user.name,
-      supportLevel: agent.supportLevel,
-      canAnswer: agent.canAnswer,
-      chatStatus: agent.user.chatStatus,
-      lastSeen: agent.user.lastSeen ?? undefined,
-    }));
+  private mapToAvailabilitySummaryResponse(
+    availableAgentMemberships: AvailableAgentMembershipRecord[],
+  ): ResponseAvailableAgentsSummaryDto {
+    const uniqueAgentIds = new Set<string>();
+    const groupsById = new Map<string, ResponseAvailabilityGroupDto>();
+
+    for (const membership of availableAgentMemberships) {
+      uniqueAgentIds.add(membership.agent.id);
+
+      const mappedAgent: ResponseAvailabilityGroupAgentDto = {
+        agentId: membership.agent.id,
+        name: membership.agent.user.name,
+        supportLevel: membership.agent.supportLevel,
+        canAnswer: membership.agent.canAnswer,
+        chatStatus: membership.agent.user.chatStatus,
+        lastSeen: membership.agent.user.lastSeen ?? undefined,
+      };
+
+      const existingGroup = groupsById.get(membership.supportGroupId);
+      if (!existingGroup) {
+        groupsById.set(membership.supportGroupId, {
+          supportGroupId: membership.supportGroupId,
+          supportGroupName: membership.supportGroupName,
+          availableCount: 1,
+          agents: [mappedAgent],
+        });
+        continue;
+      }
+
+      existingGroup.availableCount += 1;
+      existingGroup.agents.push(mappedAgent);
+    }
+
+    const groups = Array.from(groupsById.values()).sort((a, b) =>
+      a.supportGroupName.localeCompare(b.supportGroupName),
+    );
+
+    for (const group of groups) {
+      group.agents.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     return {
-      total: agents.length,
-      agents,
+      totalUniqueAvailableAgents: uniqueAgentIds.size,
+      groups,
     };
   }
 

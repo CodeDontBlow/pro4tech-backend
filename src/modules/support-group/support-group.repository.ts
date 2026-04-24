@@ -7,14 +7,18 @@ import {
   SupportLevel,
 } from 'generated/prisma/client';
 
-export type AvailableAgentRecord = {
-  id: string;
-  supportLevel: SupportLevel;
-  canAnswer: boolean;
-  user: {
-    name: string;
-    chatStatus: ChatStatus;
-    lastSeen: Date | null;
+export type AvailableAgentMembershipRecord = {
+  supportGroupId: string;
+  supportGroupName: string;
+  agent: {
+    id: string;
+    supportLevel: SupportLevel;
+    canAnswer: boolean;
+    user: {
+      name: string;
+      chatStatus: ChatStatus;
+      lastSeen: Date | null;
+    };
   };
 };
 
@@ -82,53 +86,71 @@ export class SupportGroupRepository {
     return agent.agentGroups.map((group) => group.supportGroupId);
   }
 
-  async findAvailableAgents(
+  async findAvailableAgentMemberships(
     companyId: string,
     supportGroupIds?: string[],
-  ): Promise<AvailableAgentRecord[]> {
-    const groupFilter: Prisma.AgentGroupWhereInput = {
-      supportGroup: {
-        deletedAt: null,
-        isActive: true,
-      },
+  ): Promise<AvailableAgentMembershipRecord[]> {
+    const supportGroupFilter: Prisma.SupportGroupWhereInput = {
+      deletedAt: null,
+      isActive: true,
     };
 
     if (supportGroupIds && supportGroupIds.length > 0) {
-      groupFilter.supportGroupId = { in: supportGroupIds };
+      supportGroupFilter.id = { in: supportGroupIds };
     }
 
-    return this.prisma.agent.findMany({
+    const memberships = await this.prisma.agentGroup.findMany({
       where: {
-        canAnswer: true,
-        user: {
-          role: Role.AGENT,
-          companyId,
-          isActive: true,
-          deletedAt: null,
-          chatStatus: ChatStatus.ONLINE,
-        },
-        agentGroups: {
-          some: groupFilter,
-        },
-      },
-      select: {
-        id: true,
-        supportLevel: true,
-        canAnswer: true,
-        user: {
-          select: {
-            name: true,
-            chatStatus: true,
-            lastSeen: true,
+        supportGroup: supportGroupFilter,
+        agent: {
+          canAnswer: true,
+          user: {
+            role: Role.AGENT,
+            companyId,
+            isActive: true,
+            deletedAt: null,
+            chatStatus: ChatStatus.ONLINE,
           },
         },
       },
-      orderBy: {
-        user: {
-          name: 'asc',
+      select: {
+        supportGroupId: true,
+        supportGroup: {
+          select: {
+            name: true,
+          },
+        },
+        agent: {
+          select: {
+            id: true,
+            supportLevel: true,
+            canAnswer: true,
+            user: {
+              select: {
+                name: true,
+                chatStatus: true,
+                lastSeen: true,
+              },
+            },
+          },
         },
       },
     });
+
+    return memberships.map((membership) => ({
+      supportGroupId: membership.supportGroupId,
+      supportGroupName: membership.supportGroup.name,
+      agent: {
+        id: membership.agent.id,
+        supportLevel: membership.agent.supportLevel,
+        canAnswer: membership.agent.canAnswer,
+        user: {
+          name: membership.agent.user.name,
+          chatStatus: membership.agent.user.chatStatus,
+          lastSeen: membership.agent.user.lastSeen,
+        },
+      },
+    }));
   }
 
   async update(id: string, data: any) {

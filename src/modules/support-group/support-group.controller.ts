@@ -25,8 +25,8 @@ import {
   AuthUser,
   UserPayload,
 } from 'src/common/decorators/auth-user.decorator';
-import { FindAvailableAgentsQueryDto } from './dtos/find-available-agents-query.dto';
-import { ResponseAvailableAgentsDto } from './dtos/response-available-agents.dto';
+import { FindAvailabilitySummaryQueryDto } from './dtos/find-availability-summary-query.dto';
+import { ResponseAvailableAgentsSummaryDto } from './dtos/response-available-agents.dto';
 
 //swagger
 @ApiTags('support-group')
@@ -49,9 +49,9 @@ export class SupportGroupController {
     return this.service.findAll();
   }
 
-  @Get('me/agents/available')
+  @Get('me/agents/availability-summary')
   @ApiOperation({
-    summary: 'List available agents from visible support groups',
+    summary: 'List available agents grouped by visible support groups',
   })
   @ApiQuery({
     name: 'supportGroupId',
@@ -62,20 +62,20 @@ export class SupportGroupController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Available agents listed successfully',
-    type: ResponseAvailableAgentsDto,
+    description: 'Availability summary listed successfully',
+    type: ResponseAvailableAgentsSummaryDto,
   })
   @ApiResponse({
     status: 403,
     description: 'You are not allowed to read this support group availability',
   })
   @ApiResponse({ status: 404, description: 'Support group not found' })
-  findAvailableAgents(
+  findAvailabilitySummary(
     @AuthUser() user: UserPayload,
     @Query(new ValidationPipe({ transform: true, whitelist: true }))
-    query: FindAvailableAgentsQueryDto,
-  ): Promise<ResponseAvailableAgentsDto> {
-    return this.service.findAvailableAgents(user, query.supportGroupId);
+    query: FindAvailabilitySummaryQueryDto,
+  ): Promise<ResponseAvailableAgentsSummaryDto> {
+    return this.service.findAvailabilitySummary(user, query.supportGroupId);
   }
 
   @Get(':id')
