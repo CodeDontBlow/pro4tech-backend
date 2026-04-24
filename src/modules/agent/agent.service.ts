@@ -91,7 +91,14 @@ export class AgentService {
   }
 
   private mapToResponseDto(agent: any): ResponseAgentDto {
-    const primarySupportGroup = agent.agentGroups?.[0]?.supportGroup;
+    const supportGroups = agent.agentGroups?.map((ag: any) => ({
+      id: ag.supportGroup.id,
+      name: ag.supportGroup.name,
+      description: ag.supportGroup.description,
+      isActive: ag.supportGroup.isActive,
+      createdAt: ag.supportGroup.createdAt,
+      updatedAt: ag.supportGroup.updatedAt,
+    }));
 
     return {
       id: agent.id,
@@ -108,16 +115,7 @@ export class AgentService {
         createdAt: agent.user.createdAt,
         updatedAt: agent.user.updatedAt,
       },
-      supportGroup: primarySupportGroup
-        ? {
-            id: primarySupportGroup.id,
-            name: primarySupportGroup.name,
-            description: primarySupportGroup.description,
-            isActive: primarySupportGroup.isActive,
-            createdAt: primarySupportGroup.createdAt,
-            updatedAt: primarySupportGroup.updatedAt,
-          }
-        : undefined,
+      supportGroups: supportGroups?.length ? supportGroups : undefined,
       createdAt: agent.createdAt,
       updatedAt: agent.updatedAt,
     };

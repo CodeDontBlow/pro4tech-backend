@@ -127,10 +127,10 @@ export class ResponseAgentDto {
   user: UserNestedResponseAgentDto;
 
   @ApiPropertyOptional({
-    description: 'Grupo de suporte principal do agent',
-    type: SupportGroupNestedResponseAgentDto,
+    description: 'Grupos de suporte aos quais o agent pertence',
+    type: [SupportGroupNestedResponseAgentDto],
   })
-  supportGroup?: SupportGroupNestedResponseAgentDto;
+  supportGroups?: SupportGroupNestedResponseAgentDto[];
 
   @ApiPropertyOptional({
     example: '2026-04-02T10:30:00Z',
