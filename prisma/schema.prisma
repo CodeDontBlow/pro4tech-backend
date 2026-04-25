@@ -136,6 +136,7 @@ model AgentGroup {
 
 model Ticket {
     id              String          @id
+    ticketNumber    Int             @unique @default(autoincrement())
     companyId       String
     clientId        String
     agentId         String?

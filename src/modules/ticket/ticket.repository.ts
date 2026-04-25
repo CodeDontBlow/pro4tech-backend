@@ -28,6 +28,7 @@ type FindManyTicketOptions = {
 
 const TICKET_PUBLIC_SELECT = {
   id: true,
+  ticketNumber: true,
   companyId: true,
   clientId: true,
   agentId: true,
