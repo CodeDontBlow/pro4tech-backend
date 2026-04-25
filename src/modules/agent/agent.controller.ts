@@ -10,7 +10,9 @@ import {
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { AgentService } from './agent.service';
 import { UpdateAgentDto } from './dtos/update-agent.dto';
+import { ResponseAgentDto } from './dtos/response-agent.dto';
 import { SupportLevel } from 'generated/prisma/client';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 @ApiTags('agent')
 @ApiBearerAuth()
@@ -62,7 +64,7 @@ export class AgentController {
     @Query('supportLevel') supportLevel?: SupportLevel,
     @Query('canAnswer') canAnswer?: string,
     @Query('isActive') isActive?: string,
-  ) {
+  ): Promise<ResponsePaginationDto<ResponseAgentDto>> {
     return this.agentService.findAll(
       {
         supportLevel,

@@ -37,3 +37,43 @@ export class ResponseCompanyDto {
   @ApiProperty({ example: true, description: 'Empresa está ativa?' })
   isActive: boolean;
 }
+
+class ResponseCompanyPaginationMetaDto {
+  @ApiProperty({
+    example: 42,
+    description: 'Quantidade total de empresas encontradas',
+  })
+  total: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Página atual',
+  })
+  page: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Última página disponível',
+  })
+  lastPage: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Quantidade de registros por página',
+  })
+  limit: number;
+}
+
+export class ResponseCompanyPaginationDto {
+  @ApiProperty({
+    type: [ResponseCompanyDto],
+    description: 'Empresas retornadas na página atual',
+  })
+  data: ResponseCompanyDto[];
+
+  @ApiProperty({
+    type: ResponseCompanyPaginationMetaDto,
+    description: 'Metadados de paginação',
+  })
+  meta: ResponseCompanyPaginationMetaDto;
+}

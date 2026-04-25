@@ -4,6 +4,7 @@ import { UpdateAgentDto } from './dtos/update-agent.dto';
 import { CreateAgentDto } from './dtos/create-agent.dto';
 import { ResponseAgentDto } from './dtos/response-agent.dto';
 import { SupportLevel } from 'generated/prisma/client';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 interface FindAllFilters {
   supportLevel?: SupportLevel;
@@ -33,15 +34,25 @@ export class AgentService {
     return this.mapToResponseDto(agent);
   }
 
-  async findAll(filters?: FindAllFilters, pagination?: PaginationParams) {
-    const result = await this.agentRepository.findAll(filters, pagination);
+  async findAll(
+    filters?: FindAllFilters,
+    pagination?: PaginationParams,
+  ): Promise<ResponsePaginationDto<ResponseAgentDto>> {
+    const normalizedPage = this.normalizePage(pagination?.page ?? 1);
+    const normalizedLimit = this.normalizeLimit(pagination?.limit ?? 10);
 
-    return {
-      agents: result.agents.map((agent) => this.mapToResponseDto(agent)),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-    };
+    const result = await this.agentRepository.findAll(filters, {
+      page: normalizedPage,
+      limit: normalizedLimit,
+    });
+
+    const data = result.agents.map((agent) => this.mapToResponseDto(agent));
+    return new ResponsePaginationDto(
+      data,
+      result.total,
+      normalizedPage,
+      normalizedLimit,
+    );
   }
 
   async create(createAgentDto: CreateAgentDto): Promise<ResponseAgentDto> {
@@ -121,5 +132,21 @@ export class AgentService {
       createdAt: agent.createdAt,
       updatedAt: agent.updatedAt,
     };
+  }
+
+  private normalizePage(page: number): number {
+    if (!Number.isFinite(page) || page < 1) {
+      return 1;
+    }
+
+    return Math.floor(page);
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit < 1) {
+      return 10;
+    }
+
+    return Math.min(Math.floor(limit), 100);
   }
 }

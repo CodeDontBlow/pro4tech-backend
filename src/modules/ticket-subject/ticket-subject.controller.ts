@@ -46,13 +46,44 @@ export class TicketSubjectController {
       "Se 'true', retorna também assuntos inativos. Padrão: 'false' (apenas ativos)",
     example: false,
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Quantidade por página (padrão: 10, máximo: 100)',
+  })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    type: String,
+    description: 'Filtro por nome do assunto (busca parcial)',
+    example: 'financeiro',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de assuntos obtida com sucesso',
   })
-  findAll(@Query('includeInactive') includeInactive?: string) {
+  findAll(
+    @Query('includeInactive') includeInactive?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('name') name?: string,
+  ) {
     const onlyActive = includeInactive !== 'true';
-    return this.service.findAll(onlyActive);
+    return this.service.findAll(
+      onlyActive,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      name,
+    );
   }
 
   @Get(':id')

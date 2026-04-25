@@ -5,6 +5,13 @@ import { UpdateTicketSubjectDto } from './dtos/update-ticket-subject.dto';
 import { ResponseTicketSubjectDto } from './dtos/response-ticket-subject.dto';
 import { v7 as uuidv7 } from 'uuid';
 
+type FindAllTicketSubjectOptions = {
+  onlyActive?: boolean;
+  name?: string;
+  skip?: number;
+  take?: number;
+};
+
 @Injectable()
 export class TicketSubjectRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,10 +30,43 @@ export class TicketSubjectRepository {
   }
 
   async findAll(
-    onlyActive: boolean = true,
+    options: FindAllTicketSubjectOptions = {},
   ): Promise<ResponseTicketSubjectDto[]> {
+    const { onlyActive = true, name, skip, take } = options;
+
     return this.prisma.ticketSubject.findMany({
-      where: onlyActive ? { isActive: true } : {},
+      where: {
+        ...(onlyActive ? { isActive: true } : {}),
+        ...(name
+          ? {
+              name: {
+                contains: name,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
+      },
+      skip,
+      take,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async count(onlyActive: boolean = true, name?: string): Promise<number> {
+    return this.prisma.ticketSubject.count({
+      where: {
+        ...(onlyActive ? { isActive: true } : {}),
+        ...(name
+          ? {
+              name: {
+                contains: name,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
+      },
     });
   }
 
