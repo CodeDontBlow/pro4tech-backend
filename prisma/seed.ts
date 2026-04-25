@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Role, SupportLevel } from '../generated/prisma/enums';
+import { ChatStatus, Role, SupportLevel } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import { v7 as uuidv7 } from 'uuid';
 import { generateCompanyAccessCode } from '../src/modules/accessCode/access-code.util';
@@ -318,6 +318,60 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['BI'],
+  },
+  {
+    name: 'Paula Reis',
+    email: 'paula.reis@pro4tech.com',
+    phone: '+5511999000022',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_1,
+    canAnswer: true,
+    groupNames: ['Geral', 'Suporte Nível 1'],
+  },
+  {
+    name: 'Henrique Matos',
+    email: 'henrique.matos@pro4tech.com',
+    phone: '+5511999000023',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_1,
+    canAnswer: true,
+    groupNames: ['Geral', 'Finanças', 'BI'],
+  },
+  {
+    name: 'Tais Lima',
+    email: 'tais.lima@pro4tech.com',
+    phone: '+5511999000024',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_2,
+    canAnswer: true,
+    groupNames: ['Suporte Fiscal', 'Finanças'],
+  },
+  {
+    name: 'Vinicius Prado',
+    email: 'vinicius.prado@pro4tech.com',
+    phone: '+5511999000025',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_2,
+    canAnswer: true,
+    groupNames: ['Suporte de Integrações', 'Plataforma e Performance', 'Geral'],
+  },
+  {
+    name: 'Mirela Campos',
+    email: 'mirela.campos@pro4tech.com',
+    phone: '+5511999000026',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_3,
+    canAnswer: true,
+    groupNames: ['Segurança da Informação', 'Suporte Nível 2'],
+  },
+  {
+    name: 'Otavio Rezende',
+    email: 'otavio.rezende@pro4tech.com',
+    phone: '+5511999000027',
+    role: Role.AGENT,
+    supportLevel: SupportLevel.LEVEL_3,
+    canAnswer: true,
+    groupNames: ['BI', 'Plataforma e Performance', 'Suporte de Integrações'],
   },
 ];
 
@@ -1245,6 +1299,7 @@ async function upsertUser(companyId: string, data: UserSeed) {
       role: data.role,
       companyId,
       hashedPassword,
+      chatStatus: ChatStatus.ONLINE,
       isActive: true,
     },
     create: {
@@ -1255,6 +1310,7 @@ async function upsertUser(companyId: string, data: UserSeed) {
       email: data.email,
       hashedPassword,
       role: data.role,
+      chatStatus: ChatStatus.ONLINE,
       isActive: true,
     },
     select: { id: true },
@@ -1266,12 +1322,12 @@ async function upsertAgent(agentUserId: string, data: AgentSeed) {
     where: { id: agentUserId },
     update: {
       supportLevel: data.supportLevel,
-      canAnswer: data.canAnswer,
+      canAnswer: true,
     },
     create: {
       id: agentUserId,
       supportLevel: data.supportLevel,
-      canAnswer: data.canAnswer,
+      canAnswer: true,
     },
   });
 }
