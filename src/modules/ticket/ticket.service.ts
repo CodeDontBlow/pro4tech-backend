@@ -89,7 +89,7 @@ export class TicketService {
     });
 
     this.logger.log(
-      `Ticket criado — id: ${ticket.id}, clientId: ${client.id}, triageLeafId: ${dto.triageLeafId}`,
+      `Ticket criado — id: ${ticket.id}, ticketNumber: ${ticket.ticketNumber}, clientId: ${client.id}, triageLeafId: ${dto.triageLeafId}`,
     );
     return ticket;
   }

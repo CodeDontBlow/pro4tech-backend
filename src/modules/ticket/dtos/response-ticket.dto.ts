@@ -84,6 +84,12 @@ export class ResponseTicketDto {
   id: string;
 
   @ApiProperty({
+    example: 12345,
+    description: 'Número público do ticket para exibição no front',
+  })
+  ticketNumber: number;
+
+  @ApiProperty({
     example: '',
     description: 'ID da empresa associada ao ticket',
   })
