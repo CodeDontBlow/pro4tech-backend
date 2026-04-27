@@ -8,6 +8,7 @@ import { TicketSubjectRepository } from './ticket-subject.repository';
 import { CreateTicketSubjectDto } from './dtos/create-ticket-subject.dto';
 import { UpdateTicketSubjectDto } from './dtos/update-ticket-subject.dto';
 import { ResponseTicketSubjectDto } from './dtos/response-ticket-subject.dto';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 @Injectable()
 export class TicketSubjectService {
@@ -31,8 +32,31 @@ export class TicketSubjectService {
 
   async findAll(
     onlyActive: boolean = true,
-  ): Promise<ResponseTicketSubjectDto[]> {
-    return this.repository.findAll(onlyActive);
+    page: number = 1,
+    limit: number = 10,
+    name?: string,
+  ): Promise<ResponsePaginationDto<ResponseTicketSubjectDto>> {
+    const normalizedPage = this.normalizePage(page);
+    const normalizedLimit = this.normalizeLimit(limit);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+    const normalizedName = name?.trim();
+
+    const [subjects, total] = await Promise.all([
+      this.repository.findAll({
+        onlyActive,
+        name: normalizedName,
+        skip,
+        take: normalizedLimit,
+      }),
+      this.repository.count(onlyActive, normalizedName),
+    ]);
+
+    return new ResponsePaginationDto(
+      subjects,
+      total,
+      normalizedPage,
+      normalizedLimit,
+    );
   }
 
   async findById(id: string): Promise<ResponseTicketSubjectDto> {
@@ -89,5 +113,21 @@ export class TicketSubjectService {
     }
 
     await this.repository.delete(id);
+  }
+
+  private normalizePage(page: number): number {
+    if (!Number.isFinite(page) || page < 1) {
+      return 1;
+    }
+
+    return Math.floor(page);
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit < 1) {
+      return 10;
+    }
+
+    return Math.min(Math.floor(limit), 100);
   }
 }
