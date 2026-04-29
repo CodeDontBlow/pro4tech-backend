@@ -21,6 +21,8 @@ export type ChatMessageOutput = {
   senderRole: Role;
   content: string;
   createdAt: Date;
+  editedAt?: Date | null;
+  deletedAt?: Date | null;
 };
 
 @Injectable()
@@ -79,6 +81,8 @@ export class ChatService {
       senderRole: message.senderRole,
       content: message.content,
       createdAt: message.createdAt,
+      editedAt: message.editedAt ?? null,
+      deletedAt: message.deletedAt ?? null,
     }));
   }
 
@@ -100,13 +104,85 @@ export class ChatService {
       content,
     });
 
+    return this.toOutput(created);
+  }
+
+  async updateMessage(input: {
+    ticketId: string;
+    messageId: string;
+    content: string;
+    user: UserPayload;
+  }): Promise<ChatMessageOutput> {
+    await this.assertCanAccessTicket(input.ticketId, input.user);
+
+    const message = await this.messageModel.findOne({
+      _id: input.messageId,
+      ticketId: input.ticketId,
+    });
+
+    if (!message) {
+      throw new NotFoundException('Mensagem nao encontrada');
+    }
+
+    if (message.deletedAt) {
+      throw new BadRequestException('Mensagem removida nao pode ser editada');
+    }
+
+    if (input.user.role !== Role.ADMIN && message.senderId !== input.user.sub) {
+      throw new ForbiddenException('Apenas o autor pode editar esta mensagem');
+    }
+
+    const content = input.content.trim();
+    if (!content) {
+      throw new BadRequestException('Mensagem vazia nao e permitida');
+    }
+
+    message.content = content;
+    message.editedAt = new Date();
+    await message.save();
+
+    return this.toOutput(message);
+  }
+
+  async deleteMessage(input: {
+    ticketId: string;
+    messageId: string;
+    user: UserPayload;
+  }): Promise<ChatMessageOutput> {
+    await this.assertCanAccessTicket(input.ticketId, input.user);
+
+    const message = await this.messageModel.findOne({
+      _id: input.messageId,
+      ticketId: input.ticketId,
+    });
+
+    if (!message) {
+      throw new NotFoundException('Mensagem nao encontrada');
+    }
+
+    if (input.user.role !== Role.ADMIN && message.senderId !== input.user.sub) {
+      throw new ForbiddenException('Apenas o autor pode remover esta mensagem');
+    }
+
+    if (!message.deletedAt) {
+      message.deletedAt = new Date();
+      message.content = '';
+      await message.save();
+    }
+
+    return this.toOutput(message);
+  }
+
+  private toOutput(message: ChatMessageDocument): ChatMessageOutput {
     return {
-      id: String(created._id),
-      ticketId: created.ticketId,
-      senderId: created.senderId,
-      senderRole: created.senderRole,
-      content: created.content,
-      createdAt: created.createdAt,
+      id: String(message._id),
+      ticketId: message.ticketId,
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      content: message.content,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt ?? null,
+      deletedAt: message.deletedAt ?? null,
     };
   }
 }

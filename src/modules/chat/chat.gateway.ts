@@ -14,6 +14,8 @@ import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { Server, Socket } from 'socket.io';
 import { JoinRoomDto } from './dtos/join-room.dto';
 import { SendMessageDto } from './dtos/send-message.dto';
+import { UpdateMessageDto } from './dtos/update-message.dto';
+import { DeleteMessageDto } from './dtos/delete-message.dto';
 import { ChatService } from './chat.service';
 
 type SocketWithUser = Socket & {
@@ -107,6 +109,45 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const roomName = this.chatService.getRoomName(payload.ticketId);
     this.server.to(roomName).emit('newMessage', message);
+
+    return { ok: true, id: message.id };
+  }
+
+  @SubscribeMessage('updateMessage')
+  async updateMessage(
+    @ConnectedSocket() client: SocketWithUser,
+    @MessageBody() payload: UpdateMessageDto,
+  ) {
+    const user = this.requireUser(client);
+
+    const message = await this.chatService.updateMessage({
+      ticketId: payload.ticketId,
+      messageId: payload.messageId,
+      content: payload.content,
+      user,
+    });
+
+    const roomName = this.chatService.getRoomName(payload.ticketId);
+    this.server.to(roomName).emit('updatedMessage', message);
+
+    return { ok: true, id: message.id };
+  }
+
+  @SubscribeMessage('deleteMessage')
+  async deleteMessage(
+    @ConnectedSocket() client: SocketWithUser,
+    @MessageBody() payload: DeleteMessageDto,
+  ) {
+    const user = this.requireUser(client);
+
+    const message = await this.chatService.deleteMessage({
+      ticketId: payload.ticketId,
+      messageId: payload.messageId,
+      user,
+    });
+
+    const roomName = this.chatService.getRoomName(payload.ticketId);
+    this.server.to(roomName).emit('deletedMessage', message);
 
     return { ok: true, id: message.id };
   }
