@@ -5,8 +5,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { Prisma, Role } from 'generated/prisma/client';
+import { Model } from 'mongoose';
 import { TicketRepository } from './ticket.repository';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
@@ -17,6 +19,10 @@ import {
 } from '../../../generated/prisma/enums';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { TriageRuleService } from '../triage-rule/triage-rule.service';
+import {
+  TicketTriage,
+  TicketTriageDocument,
+} from './schemas/ticket-triage.schema';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -45,6 +51,8 @@ export class TicketService {
     private readonly prisma: PrismaService,
     private readonly ticketRepository: TicketRepository,
     private readonly triageRuleService: TriageRuleService,
+    @InjectModel(TicketTriage.name)
+    private readonly ticketTriageModel: Model<TicketTriageDocument>,
   ) {}
 
   async createTicket(dto: CreateTicketDto, user: UserPayload) {
@@ -88,10 +96,12 @@ export class TicketService {
       priority: dto.priority,
     });
 
+    await this.createTriageSnapshot(ticket.id, dto.triageLeafId);
+
     this.logger.log(
       `Ticket criado — id: ${ticket.id}, ticketNumber: ${ticket.ticketNumber}, clientId: ${client.id}, triageLeafId: ${dto.triageLeafId}`,
     );
-    return ticket;
+    return this.attachTriageSummary(ticket);
   }
 
   async updateTicket(
@@ -122,7 +132,7 @@ export class TicketService {
       dto.ratingScore !== undefined || dto.ratingComment !== undefined;
 
     if (!hasStatusChange && !hasPriorityChange && !hasRatingChange) {
-      return ticket;
+      return this.attachTriageSummary(ticket);
     }
 
     if (hasStatusChange || hasPriorityChange) {
@@ -216,7 +226,7 @@ export class TicketService {
 
     this.logger.log(`Ticket atualizado — id: ${ticketId}`);
 
-    return updatedTicket;
+    return this.attachTriageSummary(updatedTicket);
   }
 
   async assignTicketToMe(ticketId: string, user: UserPayload) {
@@ -265,7 +275,7 @@ export class TicketService {
       this.logger.log(
         `Agente já estava atribuído ao ticket — ticketId: ${ticketId}, userId: ${user.sub}`,
       );
-      return ticket;
+      return this.attachTriageSummary(ticket);
     }
 
     const shouldOpenTicket = ticket.status === TicketStatus.TRIAGE;
@@ -297,7 +307,7 @@ export class TicketService {
       `Ticket assumido por agente — ticketId: ${ticketId}, agentId: ${user.sub}, status: ${ticket.status} -> ${nextStatus}`,
     );
 
-    return updatedTicket;
+    return this.attachTriageSummary(updatedTicket);
   }
 
   async getTicket(
@@ -314,7 +324,7 @@ export class TicketService {
     }
 
     await this.assertTicketVisibility(ticket, user);
-    return ticket;
+    return this.attachTriageSummary(ticket);
   }
 
   async listTickets({
@@ -357,7 +367,16 @@ export class TicketService {
       `Listagem de tickets concluída — role: ${user.role}, userId: ${user.sub}, total: ${tickets.length}, page: ${normalizedPage}, limit: ${normalizedLimit}`,
     );
 
-    return new ResponsePaginationDto(tickets, total, normalizedPage, normalizedLimit);
+    const ticketsWithTriage = await Promise.all(
+      tickets.map((ticket) => this.attachTriageSummary(ticket)),
+    );
+
+    return new ResponsePaginationDto(
+      ticketsWithTriage,
+      total,
+      normalizedPage,
+      normalizedLimit,
+    );
   }
 
   async archiveTicket(ticketId: string, user: UserPayload) {
@@ -389,7 +408,7 @@ export class TicketService {
 
     if (ticket.isArchived) {
       this.logger.log(`Ticket já estava arquivado — id: ${ticketId}`);
-      return ticket;
+      return this.attachTriageSummary(ticket);
     }
 
     const archivedTicket = await this.ticketRepository.archive(ticketId);
@@ -406,7 +425,7 @@ export class TicketService {
 
     this.logger.log(`Ticket arquivado — id: ${ticketId}`);
 
-    return archivedTicket;
+    return this.attachTriageSummary(archivedTicket);
   }
 
   async unarchiveTicket(ticketId: string, user: UserPayload) {
@@ -440,7 +459,7 @@ export class TicketService {
 
     if (!ticket.isArchived) {
       this.logger.log(`Ticket já estava desarquivado — id: ${ticketId}`);
-      return ticket;
+      return this.attachTriageSummary(ticket);
     }
 
     const unarchivedTicket = await this.ticketRepository.unarchive(ticketId);
@@ -457,7 +476,52 @@ export class TicketService {
 
     this.logger.log(`Ticket desarquivado — id: ${ticketId}`);
 
-    return unarchivedTicket;
+    return this.attachTriageSummary(unarchivedTicket);
+  }
+
+  private async createTriageSnapshot(ticketId: string, triageLeafId: string) {
+    const answers = await this.triageRuleService.buildPathAnswers(triageLeafId);
+
+    await this.ticketTriageModel.updateOne(
+      { ticketId },
+      {
+        $set: {
+          ticketId,
+          triageLeafId,
+          answers,
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  private async attachTriageSummary<T extends { id: string }>(
+    ticket: T,
+  ): Promise<T & {
+    triageSummary: {
+      triageLeafId: string;
+      answers: Array<{ question: string; answer: string }>;
+    } | null;
+  }> {
+    const triage = await this.ticketTriageModel
+      .findOne({ ticketId: ticket.id })
+      .lean();
+
+    return {
+      ...ticket,
+      triageSummary: triage
+        ? {
+            triageLeafId: triage.triageLeafId,
+            answers: triage.answers.map((answer) => ({
+              question: answer.question,
+              answer: answer.answer,
+            })),
+          }
+        : null,
+    };
   }
 
   async deleteTicket(ticketId: string, user: UserPayload): Promise<void> {

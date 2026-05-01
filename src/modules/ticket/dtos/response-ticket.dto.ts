@@ -76,6 +76,34 @@ class ResponseTicketSubjectDto {
   name: string;
 }
 
+class ResponseTicketTriageAnswerDto {
+  @ApiProperty({
+    example: 'O problema envolve autenticação na plataforma?',
+    description: 'Pergunta apresentada ao cliente na triagem',
+  })
+  question: string;
+
+  @ApiProperty({
+    example: 'Sim',
+    description: 'Resposta escolhida pelo cliente na triagem',
+  })
+  answer: string;
+}
+
+class ResponseTicketTriageSummaryDto {
+  @ApiProperty({
+    example: '',
+    description: 'ID do nó folha que encerrou a triagem',
+  })
+  triageLeafId: string;
+
+  @ApiProperty({
+    type: [ResponseTicketTriageAnswerDto],
+    description: 'Sequência de perguntas e respostas da triagem',
+  })
+  answers: ResponseTicketTriageAnswerDto[];
+}
+
 export class ResponseTicketDto {
   @ApiProperty({
     example: '',
@@ -212,6 +240,12 @@ export class ResponseTicketDto {
     description: 'Dados reduzidos do assunto',
   })
   subject?: ResponseTicketSubjectDto | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketTriageSummaryDto,
+    description: 'Resumo da triagem preenchida pelo cliente',
+  })
+  triageSummary?: ResponseTicketTriageSummaryDto | null;
 }
 
 class ResponseTicketPaginationMetaDto {
