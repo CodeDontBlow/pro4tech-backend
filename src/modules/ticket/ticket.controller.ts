@@ -39,6 +39,11 @@ import { TicketCreateRateLimitGuard } from './guards/ticket-create-rate-limit.gu
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
+  @Get(':id/triage-history')
+    async getTriageHistory(@Param('id') id: string) {
+      return this.ticketService.getTicketTriageHistory(id);
+  }
+
   /**
    * POST /tickets
    * Criar um novo ticket
