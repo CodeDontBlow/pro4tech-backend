@@ -165,6 +165,9 @@ model Ticket {
     @@index([agentId, isArchived, deletedAt])
     @@index([supportGroupId, isArchived, deletedAt])
     @@index([status, isArchived, deletedAt])
+
+    triageLeafId String?
+    triageLeaf   TriageRule? @relation(fields: [triageLeafId], references: [id])
 }
 
 model TicketHistory {
@@ -211,4 +214,5 @@ model TriageRule {
     children        TriageRule[]    @relation("TriageNode")
     supportGroup    SupportGroup?   @relation(fields: [targetGroupId], references: [id])
     subject         TicketSubject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+tickets      Ticket[]
 }

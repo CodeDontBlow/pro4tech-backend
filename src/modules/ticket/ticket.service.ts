@@ -47,6 +47,44 @@ export class TicketService {
     private readonly triageRuleService: TriageRuleService,
   ) {}
 
+async getTicketTriageHistory(ticketId: string) {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId }
+    });
+
+    if (!ticket || !ticket.triageLeafId) {
+      return [];
+    }
+
+    const history = [];
+    let currentId = ticket.triageLeafId;
+
+    while (currentId !== null) {
+      const rule = await this.prisma.triageRule.findUnique({
+        where: { id: currentId }
+      });
+
+      if (!rule) break;
+
+      if (rule.parentId) {
+        const parent = await this.prisma.triageRule.findUnique({
+          where: { id: rule.parentId }
+        });
+
+        if (parent && parent.question) {
+          history.push({
+            question: parent.question,
+            answer: rule.answerTrigger
+          });
+        }
+      }
+
+      currentId = rule.parentId;
+    }
+
+    return history.reverse();
+  }
+
   async createTicket(dto: CreateTicketDto, user: UserPayload) {
     const role = this.getRole(user);
     if (role !== Role.CLIENT) {
@@ -85,6 +123,7 @@ export class TicketService {
       clientId: client.id,
       supportGroupId: resolvedLeaf.supportGroupId,
       subjectId: resolvedLeaf.subjectId,
+      triageLeafId: dto.triageLeafId,
       priority: dto.priority,
     });
 
