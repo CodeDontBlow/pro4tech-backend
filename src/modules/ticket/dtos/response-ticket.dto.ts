@@ -19,6 +19,20 @@ class ResponseTicketClientDto {
   name: string;
 }
 
+class ResponseTicketAgentUserDto {
+  @ApiProperty({
+    example: 'Maria Souza',
+    description: 'Nome do agente',
+  })
+  name: string;
+
+  @ApiPropertyOptional({
+    example: 'https://randomuser.me/api/portraits/women/12.jpg',
+    description: 'URL do avatar do agente',
+  })
+  avatarUrl?: string;
+}
+
 class ResponseTicketAgentDto {
   @ApiProperty({
     example: '',
@@ -32,6 +46,11 @@ class ResponseTicketAgentDto {
     description: 'Nível de suporte do agente',
   })
   supportLevel: SupportLevel;
+
+  @ApiPropertyOptional({
+    description: 'Dados reduzidos do usuário do agente',
+  })
+  user?: ResponseTicketAgentUserDto;
 }
 
 class ResponseTicketCompanyDto {

@@ -60,6 +60,7 @@ model User {
     email           String          @unique    
     hashedPassword  String
     name            String
+    avatarUrl       String?
     role            Role            @default(CLIENT)
     chatStatus      ChatStatus      @default(OFFLINE)
     lastSeen        DateTime?

@@ -53,6 +53,12 @@ const TICKET_PUBLIC_SELECT = {
     select: {
       id: true,
       supportLevel: true,
+      user: {
+        select: {
+          name: true,
+          avatarUrl: true,
+        },
+      },
     },
   },
   company: {
