@@ -56,6 +56,7 @@ const TICKET_PUBLIC_SELECT = {
       user: {
         select: {
           name: true,
+          avatarUrl: true,
         },
       },
     },
