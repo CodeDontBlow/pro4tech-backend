@@ -23,6 +23,12 @@ export class ChatMessage {
 
   @Prop({ required: true, default: Date.now })
   createdAt: Date;
+
+  @Prop()
+  editedAt?: Date;
+
+  @Prop()
+  deletedAt?: Date;
 }
 
 export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessage);
