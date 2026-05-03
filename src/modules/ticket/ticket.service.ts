@@ -17,6 +17,7 @@ import {
 } from '../../../generated/prisma/enums';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { TriageRuleService } from '../triage-rule/triage-rule.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -710,6 +711,30 @@ async getTicketTriageHistory(ticketId: string) {
       throw new BadRequestException(
         `Transição de status inválida de ${currentStatus} para ${newStatus}`,
       );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async autoCloseTickets() {
+    this.logger.log('Rotina que altera automaticamente status de chamados de RESOLVED para CLOSED.');
+
+    const timelimit = 3;
+    const dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() - timelimit);
+
+    const resultado = await this.prisma.ticket.updateMany({
+      where: {
+        status: TicketStatus.RESOLVED,
+        updatedAt: { lte: dataLimite },
+      },
+      data: {
+        status: TicketStatus.CLOSED,
+        closedAt: new Date(),
+      },
+    });
+
+    if (resultado.count > 0) {
+      this.logger.log(`Foram fechados${resultado.count} tickets.`);
     }
   }
 }
