@@ -8,6 +8,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { ResponseCompanyDto } from './dtos/response-company.dto';
+import { equal } from 'node:assert';
 
 @Injectable()
 export class CompanyRepository {
@@ -60,6 +61,7 @@ export class CompanyRepository {
       take,
       where: {
         deletedAt: null,
+        NOT: { cnpj: { equals: '11.111.111/0001-11' } },
         OR: search
           ? [
               { name: { contains: search, mode: 'insensitive' } },
