@@ -11,7 +11,7 @@ import { ResponseCompanyDto } from './dtos/response-company.dto';
 
 @Injectable()
 export class CompanyRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findById(id: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
@@ -28,6 +28,13 @@ export class CompanyRepository {
   async findByContactEmail(email: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { contactEmail: email, deletedAt: null },
+    });
+  }
+
+  async findByAccessCode(code: string) {
+    return this.prisma.company.findFirst({
+      where: { accessCode: code, isActive: true },
+      select: { id: true, name: true },
     });
   }
 
@@ -62,9 +69,9 @@ export class CompanyRepository {
         deletedAt: null,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { cnpj: { contains: search } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { cnpj: { contains: search } },
+          ]
           : undefined,
       },
       orderBy: { createdAt: 'desc' },
@@ -102,9 +109,9 @@ export class CompanyRepository {
         deletedAt: null,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { cnpj: { contains: search } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { cnpj: { contains: search } },
+          ]
           : undefined,
       },
     });
