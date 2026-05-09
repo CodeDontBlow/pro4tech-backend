@@ -40,7 +40,7 @@ import {
 @ApiTags('Company')
 @ApiBearerAuth()
 //guards
-@Controller('companies')
+@Controller('company')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) { }
 
