@@ -13,6 +13,7 @@ type TicketCreatePayload = {
   clientId: string;
   supportGroupId: string;
   subjectId: string;
+  triageLeafId: string;
   priority?: TicketPriority;
 };
 
@@ -34,6 +35,7 @@ const TICKET_PUBLIC_SELECT = {
   agentId: true,
   supportGroupId: true,
   subjectId: true,
+  triageLeafId: true,
   status: true,
   priority: true,
   ratingScore: true,
@@ -92,6 +94,7 @@ export class TicketRepository {
         clientId: data.clientId,
         supportGroupId: data.supportGroupId,
         subjectId: data.subjectId,
+        triageLeafId: data.triageLeafId,
         status: TicketStatus.TRIAGE,
         priority: data.priority ?? null,
       },
