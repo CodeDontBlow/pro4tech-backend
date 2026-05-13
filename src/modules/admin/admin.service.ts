@@ -21,12 +21,6 @@ export class AdminService {
     const limit = Number(query.limit || 10);
     const skip = (page - 1) * limit;
     try {
-      const admins = await this.userRepository.findAll({
-        role: Role.ADMIN,
-        skip,
-        take: limit,
-      });
-      
       const [data, total] = await Promise.all([
         this.userRepository.findAll({
           role: Role.ADMIN,
