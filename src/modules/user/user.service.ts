@@ -24,6 +24,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { AgentService } from '@modules/agent/agent.service';
 import { CompanyService } from '@modules/company/company.service';
 import { PrismaService } from '@database/prisma/prisma.service';
+import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 
 @Injectable()
 export class UserService {
@@ -71,7 +72,27 @@ export class UserService {
     return this.userRepository.findByEmailWithPassword(email);
   }
 
-  // CRUD
+  async findAll(query: {
+    role?: Role;
+    page?: number;
+    limit?: number;
+  }): Promise<ResponsePaginationDto<ResponseUserDto>> {
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.userRepository.findAll({ role: query.role, skip, take: limit }),
+      this.userRepository.count(query.role),
+    ]);
+
+    return new ResponsePaginationDto(data, total, page, limit);
+  }
+
+  async count(role: Role): Promise<number> {
+    return this.userRepository.count(role);
+  }
+
   async create(data: CreateUserDto): Promise<ResponseUserDto> {
     await this.validateEmailNotInUse(data.email);
     if (data.phone) await this.validatePhoneNotInUse(data.phone);
