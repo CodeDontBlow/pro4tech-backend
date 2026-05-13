@@ -1,15 +1,8 @@
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
-
-//decorators
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  Param,
-  Patch,
-  Post,
   Query,
 } from '@nestjs/common';
 import { Role } from "generated/prisma/client";
