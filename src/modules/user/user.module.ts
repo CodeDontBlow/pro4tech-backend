@@ -9,6 +9,6 @@ import { CompanyModule } from '@modules/company/company.module';
   imports: [AgentModule, CompanyModule],
   providers: [UserRepository, UserService],
   controllers: [UserController],
-  exports: [UserService],
+  exports: [UserService, UserRepository],
 })
 export class UserModule {}

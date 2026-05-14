@@ -8,6 +8,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { ResponseUserDto } from './dtos/response-user.dto';
+import { Role } from 'generated/prisma/client';
 
 const userPublicSelect = {
   id: true,
@@ -63,6 +64,37 @@ export class UserRepository {
     return this.prisma.user.findUnique({
       where: { phone: phone, deletedAt: null },
       select: userPublicSelect,
+    });
+  }
+
+  async findAll(
+    params: {
+      role?: Role;
+      skip?: number;
+      take?: number;
+    }
+  ): Promise<ResponseUserDto[]> {
+
+  const { role, skip, take } = params;
+
+  return this.prisma.user.findMany({
+    skip,
+    take,
+    where: {
+      deletedAt: null,
+      ...(role ? { role } : {}),
+    },
+    select: userPublicSelect,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+  async count(role: Role): Promise<number> {
+    return this.prisma.user.count({
+      where: {
+        deletedAt: null,
+        OR: role ? [{ role }] : undefined,
+      },
     });
   }
 
