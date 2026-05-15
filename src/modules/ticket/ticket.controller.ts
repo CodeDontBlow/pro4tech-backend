@@ -228,6 +228,21 @@ export class TicketController {
     return this.ticketService.updateTicket(ticketId, dto, user);
   }
 
+@Patch(':id/reopen')
+  @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
+  @ApiOperation({ summary: 'Reabrir um chamado concluído' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Ticket reaberto', 
+    type: ResponseTicketDto 
+  })
+  async reopen(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.reopenTicket(ticketId, user);
+  }
+
   @Patch(':id/archive')
   @Roles(Role.AGENT, Role.ADMIN)
   @ApiOperation({ summary: 'Arquivar ticket' })

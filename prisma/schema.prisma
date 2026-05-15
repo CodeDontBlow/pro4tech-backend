@@ -26,6 +26,7 @@ enum TicketStatus {
     ESCALATED
     CLOSED
     RESOLVED
+    REOPENED
 }
 
 enum TicketPriority {
@@ -42,6 +43,7 @@ enum TicketAction {
     ARCHIVE
     UNARCHIVE
     SOFT_DELETE
+    REOPEN
 }
 
 enum SupportLevel {
