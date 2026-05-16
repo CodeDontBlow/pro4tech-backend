@@ -547,9 +547,9 @@ async reopenTicket(ticketId: string, user: UserPayload) {
     throw new BadRequestException('Ticket arquivado - não pode ser reaberto.');
   }
 
-  if (ticket.status !== TicketStatus.CLOSED && ticket.status !== TicketStatus.RESOLVED) {
+  if (ticket.status !== TicketStatus.RESOLVED) { 
     this.logger.warn(`Erro ao tentar reabrir ticket — id: ${ticketId}, status: ${ticket.status}`);
-    throw new BadRequestException('Apenas tickets FECHADOS ou RESOLVIDOS podem ser reabertos');
+    throw new BadRequestException('Apenas tickets RESOLVIDOS podem ser reabertos.');
   }
 
   await this.assertTicketVisibility(ticket, user);
@@ -741,7 +741,7 @@ async reopenTicket(ticketId: string, user: UserPayload) {
         TicketStatus.CLOSED,
       ],
       ESCALATED: [TicketStatus.RESOLVED, TicketStatus.CLOSED],
-      RESOLVED: [TicketStatus.CLOSED],
+      RESOLVED: [TicketStatus.CLOSED, TicketStatus.REOPENED],
       CLOSED: [],
       REOPENED: [TicketStatus.ESCALATED, TicketStatus.RESOLVED, TicketStatus.CLOSED],
     };

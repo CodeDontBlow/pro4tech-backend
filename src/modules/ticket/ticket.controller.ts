@@ -229,7 +229,7 @@ export class TicketController {
   }
 
 @Patch(':id/reopen')
-  @Roles(Role.CLIENT, Role.AGENT, Role.ADMIN)
+  @Roles(Role.CLIENT)
   @ApiOperation({ summary: 'Reabrir um chamado concluído' })
   @ApiResponse({ 
     status: 200, 
