@@ -81,6 +81,22 @@ const TICKET_PUBLIC_SELECT = {
       name: true,
     },
   },
+  supportLevel: true,           
+  escalationCount: true,      
+  lastEscalationComment: true, 
+  lastAgentId: true,           
+  lastAgent: {                 
+    select: {
+      id: true,
+      supportLevel: true,
+      user: {
+        select: {
+          name: true,
+          avatarUrl: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.TicketSelect;
 
 @Injectable()

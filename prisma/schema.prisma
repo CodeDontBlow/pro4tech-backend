@@ -105,6 +105,7 @@ model Agent {
     tickets         Ticket[]        @relation("AgentTicket")
     historyFrom     TicketHistory[] @relation("FromAgent")
     historyTo       TicketHistory[] @relation("ToAgent")
+    lastEscalatedTickets Ticket[]  @relation("LastAgentRelation")
 }
 
 model SupportGroup {
@@ -154,7 +155,12 @@ model Ticket {
     closedAt        DateTime?
     isArchived      Boolean         @default(false)
     deletedAt       DateTime?
-    
+    supportLevel          SupportLevel?  
+    escalationCount       Int            @default(0) 
+    lastEscalationComment String?        
+    lastAgentId           String?
+
+    lastAgent             Agent?         @relation("LastAgentRelation", fields: [lastAgentId], references: [id])
     client          User            @relation("ClientTicket", fields: [clientId], references: [id])
     agent           Agent?          @relation("AgentTicket", fields: [agentId], references: [id])
     company         Company         @relation(fields: [companyId], references: [id])
