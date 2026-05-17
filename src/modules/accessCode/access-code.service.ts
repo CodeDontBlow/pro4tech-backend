@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import * as QRCode from 'qrcode';
 import { generateCompanyAccessCode } from './access-code.util';
@@ -26,6 +27,7 @@ const config: QRCode.QRCodeToDataURLOptions = {
 export class AccessCodeService {
   private readonly logger = new Logger(AccessCodeService.name);
 
+
   async generateAccessCode(company: string): Promise<ReturnQr> {
     if (!company?.trim()) {
       throw new BadRequestException('Company name is required.');
@@ -47,4 +49,5 @@ export class AccessCodeService {
       throw new InternalServerErrorException('Generation failed.');
     }
   }
+
 }

@@ -21,7 +21,7 @@ export class CompanyService {
   constructor(
     private readonly companyRepository: CompanyRepository,
     private readonly accessCodeService: AccessCodeService,
-  ) {}
+  ) { }
 
   private async validateCompanyData(companyDto: CreateCompanyDto) {
     const existingCnpj = await this.companyRepository.findByCnpj(
@@ -54,6 +54,18 @@ export class CompanyService {
       throw new ConflictException(`Email ${contactEmail} already in use`);
     }
   }
+
+  async findByAccessCode(code: string): Promise<{ id: string; name: string }> {
+    const company = await this.companyRepository.findByAccessCode(code);
+
+    if (!company) {
+      this.logger.warn(`Company not found — access code: ${code}`);
+      throw new NotFoundException('Código inválido ou empresa não encontrada.');
+    }
+
+    return { id: company.id, name: company.name };
+  }
+
 
   async findById(id: string): Promise<ResponseCompanyDto | null> {
     const company = await this.companyRepository.findById(id);

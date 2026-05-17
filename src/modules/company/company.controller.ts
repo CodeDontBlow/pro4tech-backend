@@ -16,6 +16,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Public } from '@modules/auth/decorators/public.decorator';
 import {
   AuthUser,
   UserPayload,
@@ -39,12 +40,12 @@ import {
 @ApiTags('Company')
 @ApiBearerAuth()
 //guards
-@Roles(Role.ADMIN)
 @Controller('company')
 export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(private readonly companyService: CompanyService) { }
 
   @Post('register')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Cadastrar empresa' })
   @ApiResponse({
     status: 201,
@@ -58,8 +59,8 @@ export class CompanyController {
   create(@Body() dto: CreateCompanyDto) {
     return this.companyService.create(dto);
   }
-
   @Get()
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar empresas (paginado)' })
   @ApiQuery({
     name: 'page',
@@ -68,6 +69,7 @@ export class CompanyController {
     example: 1,
     description: 'Número da página (padrão: 1)',
   })
+  @Roles(Role.ADMIN)
   @ApiQuery({
     name: 'limit',
     required: false,
@@ -99,7 +101,14 @@ export class CompanyController {
     });
   }
 
+  @Get('lookup/:code')
+  @Public()
+  findByAccessCode(@Param('code') code: string) {
+    return this.companyService.findByAccessCode(code);
+  }
+
   @Patch('me')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar empresa do usuário autenticado' })
   @ApiResponse({
     status: 200,
@@ -119,6 +128,7 @@ export class CompanyController {
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar empresa por ID' })
   @ApiParam({
     name: 'id',
@@ -143,6 +153,7 @@ export class CompanyController {
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Desativar empresa (soft delete)' })
   @ApiParam({
     name: 'id',
