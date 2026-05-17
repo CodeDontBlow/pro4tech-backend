@@ -533,6 +533,48 @@ async getTicketTriageHistory(ticketId: string) {
     this.logger.log(`Ticket excluído logicamente — id: ${ticketId}`);
   }
 
+async reopenTicket(ticketId: string, user: UserPayload) {
+  const ticket = await this.ticketRepository.findById(ticketId, {
+    includeArchived: true,
+  });
+
+  if (!ticket) {
+    this.logger.warn(`Ticket não encontrado — id: ${ticketId}`);
+    throw new NotFoundException('Ticket não encontrado');
+  }
+
+  if (ticket.isArchived) {
+    throw new BadRequestException('Ticket arquivado - não pode ser reaberto.');
+  }
+
+  if (ticket.status !== TicketStatus.RESOLVED) { 
+    this.logger.warn(`Erro ao tentar reabrir ticket — id: ${ticketId}, status: ${ticket.status}`);
+    throw new BadRequestException('Apenas tickets RESOLVIDOS podem ser reabertos.');
+  }
+
+  await this.assertTicketVisibility(ticket, user);
+
+  const updatedTicket = await this.ticketRepository.update(ticketId, {
+    status: TicketStatus.REOPENED,
+    closedAt: null, 
+  });
+
+  await this.ticketRepository.createHistory({
+    ticketId,
+    actionType: TicketAction.REOPEN,
+    fromStatus: ticket.status,
+    toStatus: TicketStatus.REOPENED,
+    fromGroupId: ticket.supportGroupId,
+    toGroupId: ticket.supportGroupId,
+    fromAgentId: ticket.agentId,
+    toAgentId: ticket.agentId,
+  });
+
+  this.logger.log(`Ticket reaberto — id: ${ticketId}, por: ${user.sub} (${user.role})`);
+
+  return updatedTicket;
+}
+
   private buildVisibilityWhere({
     user,
     status,
@@ -699,8 +741,9 @@ async getTicketTriageHistory(ticketId: string) {
         TicketStatus.CLOSED,
       ],
       ESCALATED: [TicketStatus.RESOLVED, TicketStatus.CLOSED],
-      RESOLVED: [TicketStatus.CLOSED],
+      RESOLVED: [TicketStatus.CLOSED, TicketStatus.REOPENED],
       CLOSED: [],
+      REOPENED: [TicketStatus.ESCALATED, TicketStatus.RESOLVED, TicketStatus.CLOSED],
     };
 
     const allowedTransitions = validTransitions[currentStatus] || [];
