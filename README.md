@@ -28,7 +28,7 @@ Você pode rodar o backend de duas formas principais:
 1. **Clone o repositório**
 
    ```bash
-   git clone https://github.com/seu-usuario/pro4tech-backend.git
+   git clone https://github.com/CodeDontBlow/pro4tech-backend.git
    cd pro4tech-backend
    ```
 

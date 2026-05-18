@@ -11,6 +11,7 @@ import { TicketRepository } from './ticket.repository';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
 import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
+import { ChatGateway } from '../chat/chat.gateway';
 import {
   TicketAction,
   TicketStatus,
@@ -46,9 +47,10 @@ export class TicketService {
     private readonly prisma: PrismaService,
     private readonly ticketRepository: TicketRepository,
     private readonly triageRuleService: TriageRuleService,
-  ) {}
+    private readonly chatGateway: ChatGateway,
+  ) { }
 
-async getTicketTriageHistory(ticketId: string) {
+  async getTicketTriageHistory(ticketId: string) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId }
     });
@@ -248,6 +250,17 @@ async getTicketTriageHistory(ticketId: string) {
         fromAgentId: ticket.agentId,
         toAgentId: ticket.agentId,
       });
+
+      if (dto.status === TicketStatus.CLOSED) {
+        const roomName = `ticket_${ticketId}`;
+
+        this.chatGateway.emitToRoom(roomName, 'ticketClosed', {
+          ticketId,
+          message: 'Chamado encerrado',
+        });
+
+        this.chatGateway.removeRoom(roomName);
+      }
 
       this.logger.log(
         `Status do ticket atualizado — id: ${ticketId}, de: ${ticket.status}, para: ${dto.status}`,

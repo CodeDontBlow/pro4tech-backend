@@ -40,7 +40,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwtService: JwtService,
     private readonly chatService: ChatService,
-  ) {}
+  ) { }
+  public emitToRoom(room: string, event: string, payload: any) {
+    this.server.to(room).emit(event, payload);
+  }
+
+  public removeRoom(room: string) {
+    this.server.in(room).socketsLeave(room);
+  }
+
 
   async handleConnection(client: SocketWithUser): Promise<void> {
     const token = this.extractToken(client);
@@ -108,7 +116,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     const roomName = this.chatService.getRoomName(payload.ticketId);
-    this.server.to(roomName).emit('newMessage', message);
+    this.emitToRoom(roomName, 'newMessage', message);
 
     return { ok: true, id: message.id };
   }
@@ -159,6 +167,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     return user;
+  }
+
+  emitTicketClosed(ticketId: string) {
+    const roomName = this.chatService.getRoomName(ticketId);
+
+    this.emitToRoom(roomName, 'ticketClosed', {
+      ticketId,
+      status: 'CLOSED',
+    });
+
+    this.removeRoom(roomName);
   }
 
   private extractToken(client: Socket): string | undefined {
