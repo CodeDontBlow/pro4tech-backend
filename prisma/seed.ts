@@ -1,8 +1,16 @@
 import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { ChatStatus, Role, SupportLevel } from '../generated/prisma/enums';
+import {
+  ChatStatus,
+  Role,
+  SupportLevel,
+  TicketAction,
+  TicketPriority,
+  TicketStatus,
+} from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
+import mongoose from 'mongoose';
 import { v7 as uuidv7 } from 'uuid';
 import { generateCompanyAccessCode } from '../src/modules/accessCode/access-code.util';
 
@@ -26,6 +34,7 @@ type UserSeed = {
   email: string;
   phone: string;
   role: Role;
+  avatarUrl?: string;
 };
 
 type AgentSeed = UserSeed & {
@@ -71,6 +80,29 @@ type TriageStats = {
   maxDepth: number;
 };
 
+type LeafAssignment = {
+  subjectName: string;
+  targetGroupName: string;
+};
+
+type SeededTicket = {
+  id: string;
+  clientId: string;
+  agentId: string;
+  supportGroupId: string;
+  subjectId: string;
+  subjectName: string;
+  status: TicketStatus;
+  createdAt: Date;
+  closedAt: Date | null;
+};
+
+type TicketSeedSummary = {
+  openTickets: number;
+  closedTickets: number;
+  messageCount: number;
+};
+
 type DeepSubBranchSeed = {
   answerTrigger: string;
   question: string;
@@ -94,7 +126,13 @@ type CompactTriageBranchTemplate = {
 
 const DEFAULT_PASSWORD = 'Password@123';
 
+const ASSIGNED_AGENT_EMAIL = 'agent@agent.com';
+const PREFERRED_CLIENT_EMAIL = 'client@client.com';
+const OPEN_TICKET_COUNT = 10;
+const CLOSED_TICKET_COUNT = 5;
+
 const REQUIRED_GROUP_NAMES = ['BI', 'Finanças', 'Geral'] as const;
+
 
 const SUPPORT_GROUPS: SupportGroupSeed[] = [
   {
@@ -147,15 +185,17 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/31.jpg',
   },
   {
-    name: 'agent',
+    name: 'Cláudio Gomes',
     email: 'agent@agent.com',
     phone: '+5511999000003',
     role: Role.AGENT,
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: SUPPORT_GROUPS.map((group) => group.name),
+    avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
   },
   {
     name: 'Bruno Araujo',
@@ -165,6 +205,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/33.jpg',
   },
   {
     name: 'Julia Martins',
@@ -174,6 +215,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/34.jpg',
   },
   {
     name: 'Diego Santos',
@@ -183,6 +225,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/35.jpg',
   },
   {
     name: 'Renata Costa',
@@ -192,6 +235,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/36.jpg',
   },
   {
     name: 'Thiago Alves',
@@ -201,6 +245,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/37.jpg',
   },
   {
     name: 'Marina Prado',
@@ -210,6 +255,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/38.jpg',
   },
   {
     name: 'Caio Fernandes',
@@ -219,6 +265,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/39.jpg',
   },
   {
     name: 'Beatriz Moura',
@@ -228,6 +275,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/40.jpg',
   },
   {
     name: 'Rafael Nogueira',
@@ -237,6 +285,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/41.jpg',
   },
   {
     name: 'Larissa Duarte',
@@ -246,6 +295,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/42.jpg',
   },
   {
     name: 'Felipe Cardoso',
@@ -255,6 +305,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/43.jpg',
   },
   {
     name: 'Vanessa Ribeiro',
@@ -264,6 +315,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
   },
   {
     name: 'Igor Carvalho',
@@ -273,6 +325,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/45.jpg',
   },
   {
     name: 'Natalia Pires',
@@ -282,6 +335,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/46.jpg',
   },
   {
     name: 'Danilo Faria',
@@ -291,6 +345,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/47.jpg',
   },
   {
     name: 'Sergio Batista',
@@ -300,6 +355,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/48.jpg',
   },
   {
     name: 'Camila Monteiro',
@@ -309,6 +365,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/49.jpg',
   },
   {
     name: 'Andre Lopes',
@@ -318,6 +375,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/50.jpg',
   },
   {
     name: 'Paula Reis',
@@ -327,6 +385,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral', 'Suporte Nível 1'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/51.jpg',
   },
   {
     name: 'Henrique Matos',
@@ -336,6 +395,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_1,
     canAnswer: true,
     groupNames: ['Geral', 'Finanças', 'BI'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/52.jpg',
   },
   {
     name: 'Tais Lima',
@@ -345,6 +405,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['Suporte Fiscal', 'Finanças'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/53.jpg',
   },
   {
     name: 'Vinicius Prado',
@@ -354,6 +415,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_2,
     canAnswer: true,
     groupNames: ['Suporte de Integrações', 'Plataforma e Performance', 'Geral'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/54.jpg',
   },
   {
     name: 'Mirela Campos',
@@ -363,6 +425,7 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['Segurança da Informação', 'Suporte Nível 2'],
+    avatarUrl: 'https://randomuser.me/api/portraits/women/55.jpg',
   },
   {
     name: 'Otavio Rezende',
@@ -372,189 +435,51 @@ const PRO4TECH_AGENTS: AgentSeed[] = [
     supportLevel: SupportLevel.LEVEL_3,
     canAnswer: true,
     groupNames: ['BI', 'Plataforma e Performance', 'Suporte de Integrações'],
+    avatarUrl: 'https://randomuser.me/api/portraits/men/56.jpg',
   },
 ];
 
 const TICKET_SUBJECTS: TicketSubjectSeed[] = [
   {
-    name: 'NFe com rejeicao tributaria',
-    description:
-      'Rejeicoes em NF-e por regra fiscal, cadastro, CST ou tributacao.',
-  },
-  {
-    name: 'NFe com timeout de autorizacao',
-    description: 'Falha de autorizacao de NF-e por timeout em lotes de emissao.',
-  },
-  {
-    name: 'NFSe com schema invalido',
-    description: 'Erros de schema no envio de NFS-e para prefeituras integradas.',
-  },
-  {
-    name: 'NFSe com indisponibilidade municipal',
-    description: 'Instabilidade no provedor municipal durante emissao de NFS-e.',
-  },
-  {
-    name: 'Conciliacao fiscal com divergencia de aliquotas',
-    description: 'Divergencia de aliquotas em conciliacao de apuracao fiscal.',
-  },
-  {
-    name: 'Conciliacao fiscal com diferenca de base',
-    description: 'Base tributavel divergente entre fontes no fechamento fiscal.',
-  },
-  {
-    name: 'Provisao financeira com impostos em duplicidade',
-    description:
-      'Lancamentos duplicados de impostos na provisao e fechamento financeiro.',
-  },
-  {
-    name: 'Provisao financeira com impostos ausentes',
-    description: 'Impostos nao provisionados no ciclo financeiro mensal.',
-  },
-  {
-    name: 'API ERP com erro de autenticacao',
-    description: 'Falhas de token, credenciais ou assinatura em API com ERP.',
-  },
-  {
-    name: 'API ERP com quebra de contrato',
-    description: 'Mudanca de payload ou contrato quebrando integracao de ERP.',
-  },
-  {
-    name: 'Webhook sem entrega de eventos',
-    description: 'Eventos nao entregues no fluxo de webhook de integracoes.',
-  },
-  {
-    name: 'Webhook com eventos duplicados',
-    description: 'Eventos duplicados gerando reprocessamento indevido no fluxo.',
-  },
-  {
-    name: 'ETL BI com atraso de carga',
-    description: 'Pipeline ETL com atraso de carga e defasagem de indicadores.',
-  },
-  {
-    name: 'ETL BI com quebra de transformacao',
-    description: 'Erros em transformacoes do ETL impactando tabelas analiticas.',
-  },
-  {
-    name: 'Sincronizacao BI com metricas divergentes',
-    description: 'Diferenca de metricas entre ambiente transacional e analitico.',
-  },
-  {
-    name: 'Sincronizacao BI com dados faltantes',
-    description: 'Registros ausentes apos sincronizacao de dados para BI.',
-  },
-  {
-    name: 'Login corporativo com falha de SSO',
-    description: 'Falha de login em SSO corporativo com provedores de identidade.',
-  },
-  {
-    name: 'Login corporativo com bloqueio por politica',
-    description: 'Acesso bloqueado por politica de seguranca ou condicional.',
-  },
-  {
-    name: 'Permissoes com perfil inconsistente',
-    description: 'Permissoes divergentes em perfis de acesso de usuarios.',
-  },
-  {
-    name: 'Permissoes com heranca indevida',
-    description: 'Heranca de permissao indevida em estruturas organizacionais.',
-  },
-  {
-    name: 'Incidente de seguranca com tentativa de invasao',
-    description: 'Tentativa de invasao detectada em conta, endpoint ou sessao.',
-  },
-  {
-    name: 'Incidente de seguranca com vazamento potencial',
-    description: 'Suspeita de exposicao de dados ou vazamento potencial.',
-  },
-  {
-    name: 'Auditoria de acesso com trilha incompleta',
-    description: 'Logs de auditoria incompletos para rastreabilidade de acesso.',
-  },
-  {
-    name: 'Auditoria de acesso com evidencia divergente',
-    description: 'Evidencias de auditoria divergentes entre fontes monitoradas.',
-  },
-  {
-    name: 'Dashboard financeiro com metrica incorreta',
-    description: 'Indicadores financeiros inconsistentes em dashboards executivos.',
-  },
-  {
-    name: 'Dashboard financeiro sem atualizacao diaria',
-    description: 'Painel financeiro sem refresh diario esperado pela operacao.',
-  },
-  {
-    name: 'Relatorio operacional com filtros inconsistentes',
-    description: 'Filtros aplicados em relatorios retornando recorte incorreto.',
-  },
-  {
-    name: 'Relatorio operacional com lentidao critica',
-    description: 'Lentidao severa na geracao de relatorios operacionais.',
-  },
-  {
-    name: 'Planejamento de custos com centro incorreto',
-    description: 'Custos alocados no centro errado no planejamento financeiro.',
-  },
-  {
-    name: 'Planejamento de custos com rateio incorreto',
-    description: 'Rateio de custos com regras incorretas no planejamento.',
-  },
-  {
-    name: 'Governanca de dados com cadastro duplicado',
-    description: 'Cadastros duplicados impactando consistencia e governanca.',
-  },
-  {
-    name: 'Governanca de dados com qualidade insuficiente',
-    description: 'Qualidade de dados abaixo do esperado para tomada de decisao.',
-  },
-  {
     name: 'App Web - falha apenas na conta do cliente',
     description:
-      'Encerrar triagem e abrir ticket de suporte nivel 1 para problema isolado em conta.',
-  },
-  {
-    name: 'BI - painel nao carrega ou erro de acesso',
-    description:
-      'Encerrar triagem direcionando para o time de Infraestrutura por indisponibilidade de painel.',
-  },
-  {
-    name: 'BI - dados desatualizados no dashboard',
-    description:
-      'Encerrar triagem direcionando para Engenharia de Dados por atraso de atualizacao.',
-  },
-  {
-    name: 'RPA - robo parado por falha de login ou timeout',
-    description:
-      'Encerrar triagem com acao de reinicio do bot e abertura de log tecnico.',
-  },
-  {
-    name: 'RPA - execucao com erro de regra de negocio',
-    description:
-      'Encerrar triagem direcionando para analista de RPA para ajuste de regra.',
-  },
-  {
-    name: 'IoT - dispositivo offline sem conexao',
-    description:
-      'Encerrar triagem enviando guia de reinicializacao de hardware e conectividade.',
-  },
-  {
-    name: 'IoT - dispositivo online sem enviar telemetria',
-    description:
-      'Encerrar triagem direcionando para investigacao de firmware e protocolo.',
+      'Falha isolada em conta individual, sem impacto geral na plataforma.',
   },
   {
     name: 'App Web - erro 500 para todos os usuarios',
-    description:
-      'Encerrar triagem abrindo incidente critico P1 para DevOps por erro interno.',
+    description: 'Erro interno recorrente para todos os usuarios do sistema.',
   },
   {
     name: 'App Web - erro 503 servico indisponivel',
-    description:
-      'Encerrar triagem verificando status do servico e informando o cliente.',
+    description: 'Servicos indisponiveis ou instaveis em ambiente web.',
   },
   {
     name: 'App Web - tela branca ou travada sem codigo',
-    description:
-      'Encerrar triagem abrindo incidente P2 para time de Front-end.',
+    description: 'Tela em branco, travamento ou bloqueio sem codigo exibido.',
+  },
+  {
+    name: 'BI - painel nao carrega ou erro de acesso',
+    description: 'Dashboard indisponivel, sem carga ou com falha de acesso.',
+  },
+  {
+    name: 'BI - dados desatualizados no dashboard',
+    description: 'Informacoes atrasadas ou inconsistentes no painel de BI.',
+  },
+  {
+    name: 'RPA - robo parado por falha de login ou timeout',
+    description: 'Automacao interrompida por falha de login ou tempo excedido.',
+  },
+  {
+    name: 'RPA - execucao com erro de regra de negocio',
+    description: 'Execucao com erro por regra ou validacao de negocio.',
+  },
+  {
+    name: 'IoT - dispositivo offline sem conexao',
+    description: 'Dispositivo perdeu conexao e nao responde na rede.',
+  },
+  {
+    name: 'IoT - dispositivo online sem enviar telemetria',
+    description: 'Dispositivo online sem envio de dados ou telemetria.',
   },
 ];
 
@@ -711,83 +636,89 @@ function createLeaf(leaf: TriageLeafSeed): TriageNodeSeed {
 }
 
 const REQUESTED_TRIAGE_ROOT_BLUEPRINT: TriageNodeSeed = {
-  question: 'Qual serviço da Pro4tech está apresentando instabilidade?',
+  question: 'Qual servico da Pro4Tech esta com instabilidade agora?',
   children: [
     createBranch(
-      'aplicativos-web-mobile',
-      'O problema afeta todos os usuários do sistema ou apenas a sua conta?',
+      'Aplicativos web e mobile',
+      'Para aplicativos web/mobile, qual cenario descreve melhor o impacto?',
       [
         createBranch(
-          'afeta-todos-os-usuarios',
-          'Qual comportamento ou mensagem de erro está aparecendo na tela para os usuários?',
+          'Impacto geral',
+          'Quando o impacto e geral, o que aparece na tela?',
           [
             createLeaf({
-              answerTrigger: 'erro-500',
+              answerTrigger: 'Erro 500',
               subjectName: 'App Web - erro 500 para todos os usuarios',
               targetGroupName: 'Plataforma e Performance',
             }),
             createLeaf({
-              answerTrigger: 'erro-503',
+              answerTrigger: 'Erro 503',
               subjectName: 'App Web - erro 503 servico indisponivel',
               targetGroupName: 'Plataforma e Performance',
             }),
+          ],
+        ),
+        createBranch(
+          'Impacto apenas na minha conta',
+          'Quando o problema e individual, o que voce observa?',
+          [
             createLeaf({
-              answerTrigger: 'tela-branca-travada',
+              answerTrigger: 'Tela branca ou travada',
               subjectName: 'App Web - tela branca ou travada sem codigo',
               targetGroupName: 'Suporte Nível 2',
             }),
+            createLeaf({
+              answerTrigger: 'Falha apenas na minha conta',
+              subjectName: 'App Web - falha apenas na conta do cliente',
+              targetGroupName: 'Geral',
+            }),
           ],
         ),
-        createLeaf({
-          answerTrigger: 'afeta-apenas-minha-conta',
-          subjectName: 'App Web - falha apenas na conta do cliente',
-          targetGroupName: 'Geral',
-        }),
       ],
     ),
     createBranch(
-      'dashboards-bi',
-      'O dashboard não carrega na tela ou as informações estão desatualizadas?',
+      'Dashboards e BI',
+      'Sobre dashboards e BI, qual situacao melhor descreve o problema?',
       [
         createLeaf({
-          answerTrigger: 'painel-nao-carrega',
+          answerTrigger: 'Painel nao carrega ou sem acesso',
           subjectName: 'BI - painel nao carrega ou erro de acesso',
           targetGroupName: 'Plataforma e Performance',
         }),
         createLeaf({
-          answerTrigger: 'dados-desatualizados',
+          answerTrigger: 'Dados desatualizados',
           subjectName: 'BI - dados desatualizados no dashboard',
           targetGroupName: 'BI',
         }),
       ],
     ),
     createBranch(
-      'robos-rpa',
-      'O robô de automação parou completamente ou está executando a tarefa com erros?',
+      'Automacoes RPA',
+      'Sobre automacoes RPA, o que aconteceu?',
       [
         createLeaf({
-          answerTrigger: 'robo-parou-completamente',
+          answerTrigger: 'Robo parou ou nao autentica',
           subjectName: 'RPA - robo parado por falha de login ou timeout',
           targetGroupName: 'Suporte de Integrações',
         }),
         createLeaf({
-          answerTrigger: 'robo-com-erros-de-regra',
+          answerTrigger: 'Erro de regra de negocio',
           subjectName: 'RPA - execucao com erro de regra de negocio',
           targetGroupName: 'Suporte de Integrações',
         }),
       ],
     ),
     createBranch(
-      'sensores-dispositivos-iot',
-      'O dispositivo perdeu a conexão com a rede Wi-Fi/4G ou está online mas não envia a telemetria?',
+      'Dispositivos IoT',
+      'Sobre dispositivos IoT, qual sintoma voce percebe?',
       [
         createLeaf({
-          answerTrigger: 'dispositivo-offline',
+          answerTrigger: 'Dispositivo offline',
           subjectName: 'IoT - dispositivo offline sem conexao',
           targetGroupName: 'Geral',
         }),
         createLeaf({
-          answerTrigger: 'dispositivo-sem-telemetria',
+          answerTrigger: 'Sem telemetria',
           subjectName: 'IoT - dispositivo online sem enviar telemetria',
           targetGroupName: 'Suporte de Integrações',
         }),
@@ -1291,6 +1222,7 @@ async function upsertCompany(data: CompanySeed) {
 
 async function upsertUser(companyId: string, data: UserSeed) {
   const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+  const avatarUrl = data.avatarUrl ?? null;
   return prisma.user.upsert({
     where: { email: data.email },
     update: {
@@ -1299,6 +1231,7 @@ async function upsertUser(companyId: string, data: UserSeed) {
       role: data.role,
       companyId,
       hashedPassword,
+      avatarUrl,
       chatStatus: ChatStatus.ONLINE,
       isActive: true,
     },
@@ -1309,6 +1242,7 @@ async function upsertUser(companyId: string, data: UserSeed) {
       phone: data.phone,
       email: data.email,
       hashedPassword,
+      avatarUrl,
       role: data.role,
       chatStatus: ChatStatus.ONLINE,
       isActive: true,
@@ -1594,6 +1528,23 @@ function validateTriageBlueprint(root: TriageNodeSeed) {
   }
 }
 
+function collectLeafAssignments(node: TriageNodeSeed): LeafAssignment[] {
+  const children = node.children ?? [];
+  if (children.length === 0) {
+    if (!node.subjectName || !node.targetGroupName) {
+      throw new Error('Leaf node missing subjectName or targetGroupName');
+    }
+    return [
+      {
+        subjectName: node.subjectName,
+        targetGroupName: node.targetGroupName,
+      },
+    ];
+  }
+
+  return children.flatMap((child) => collectLeafAssignments(child));
+}
+
 async function createTriageNodeRecursive(
   node: TriageNodeSeed,
   parentId: string | null,
@@ -1743,6 +1694,336 @@ async function seedAgentGroupAssignments(
   console.log(`✅ Agent groups seeded (${persistedAssignments} assignments)`);
 }
 
+const CLIENT_INTRO_BY_SUBJECT: Record<string, string> = {
+  'App Web - falha apenas na conta do cliente':
+    'O sistema funciona para outros usuarios, mas minha conta falha ao acessar.',
+  'App Web - erro 500 para todos os usuarios':
+    'Estamos recebendo erro 500 para todos os usuarios ao abrir o sistema.',
+  'App Web - erro 503 servico indisponivel':
+    'O servico esta retornando 503 desde hoje cedo.',
+  'App Web - tela branca ou travada sem codigo':
+    'A tela fica branca e nao carrega nenhuma informacao.',
+  'BI - painel nao carrega ou erro de acesso':
+    'Nao consigo carregar o painel de BI, aparece erro de acesso.',
+  'BI - dados desatualizados no dashboard':
+    'Os dados do dashboard estao desatualizados em relacao ao dia de hoje.',
+  'RPA - robo parado por falha de login ou timeout':
+    'O robo parou porque o login nao autentica e ocorre timeout.',
+  'RPA - execucao com erro de regra de negocio':
+    'A automacao falha por regra de negocio no meio do fluxo.',
+  'IoT - dispositivo offline sem conexao':
+    'Temos um dispositivo offline e sem conexao com a rede.',
+  'IoT - dispositivo online sem enviar telemetria':
+    'O dispositivo aparece online, mas nao envia telemetria.',
+};
+
+const CLIENT_MESSAGE_POOL = [
+  'Pode verificar o que ocorreu nas ultimas horas?',
+  'Temos impacto direto na operacao agora.',
+  'Ja reiniciamos o navegador e limpamos cache.',
+  'Consigo reproduzir o erro sempre que tento acessar.',
+  'Alguma previsao de estabilizacao?',
+  'Posso enviar prints ou logs se precisar.',
+  'Aconteceu depois de uma atualizacao hoje cedo.',
+  'Isso esta acontecendo desde ontem a noite.',
+];
+
+const AGENT_MESSAGE_POOL = [
+  'Obrigado pelos detalhes, vou analisar com prioridade.',
+  'Consegue informar horario aproximado do primeiro erro?',
+  'Estou validando os logs e retorno em seguida.',
+  'Vou acionar o time responsavel e manter voce informado.',
+  'Verifiquei o status e ja iniciamos investigacao.',
+  'Pode me confirmar se o problema persiste agora?',
+  'Estou aplicando uma mitigacao inicial.',
+  'Obrigado, vamos acompanhar ate a normalizacao.',
+];
+
+const CLIENT_CLOSING_POOL = [
+  'Obrigado pelo suporte, aqui normalizou.',
+  'Tudo certo por aqui agora, obrigado.',
+  'Confirmo que esta funcionando novamente.',
+];
+
+const AGENT_CLOSING_POOL = [
+  'Aplicamos o ajuste e o servico voltou a normalizar. Vou encerrar o ticket.',
+  'Tudo estabilizado, encerro o chamado. Se voltar a ocorrer, nos acione.',
+  'Resolvido do nosso lado. Encerrando o ticket, obrigado.',
+];
+
+function buildChatMessagesForTicket(
+  ticket: SeededTicket,
+  totalMessages: number,
+): Array<{
+  ticketId: string;
+  senderId: string;
+  senderRole: Role;
+  content: string;
+  createdAt: Date;
+}> {
+  const messages: Array<{
+    ticketId: string;
+    senderId: string;
+    senderRole: Role;
+    content: string;
+    createdAt: Date;
+  }> = [];
+
+  let timestamp = new Date(
+    ticket.createdAt.getTime() + randomInt(5, 45) * 60 * 1000,
+  );
+
+  for (let index = 0; index < totalMessages; index += 1) {
+    const isClient = index % 2 === 0;
+    const isLast = index === totalMessages - 1;
+
+    let content = '';
+    if (index === 0 && isClient) {
+      content =
+        CLIENT_INTRO_BY_SUBJECT[ticket.subjectName]
+        ?? `Preciso de ajuda com o tema: ${ticket.subjectName}.`;
+    } else if (isLast && ticket.status === TicketStatus.CLOSED) {
+      content = isClient
+        ? pickRandom(CLIENT_CLOSING_POOL)
+        : pickRandom(AGENT_CLOSING_POOL);
+    } else {
+      content = isClient
+        ? pickRandom(CLIENT_MESSAGE_POOL)
+        : pickRandom(AGENT_MESSAGE_POOL);
+    }
+
+    messages.push({
+      ticketId: ticket.id,
+      senderId: isClient ? ticket.clientId : ticket.agentId,
+      senderRole: isClient ? Role.CLIENT : Role.AGENT,
+      content,
+      createdAt: new Date(timestamp),
+    });
+
+    timestamp = new Date(timestamp.getTime() + randomInt(3, 18) * 60 * 1000);
+  }
+
+  return messages;
+}
+
+async function seedChatMessages(tickets: SeededTicket[]) {
+  const mongoUri = process.env.MONGO_URI ?? process.env.MONGODB_URI;
+  if (!mongoUri) {
+    console.warn('⚠️ MONGO_URI is not set. Skipping chat message seeding.');
+    return 0;
+  }
+
+  const messageSchema = new mongoose.Schema(
+    {
+      ticketId: { type: String, required: true, index: true },
+      senderId: { type: String, required: true },
+      senderRole: { type: String, required: true },
+      content: { type: String, required: true, trim: true, maxlength: 2000 },
+      createdAt: { type: Date, required: true },
+    },
+    { collection: 'messages', versionKey: false },
+  );
+
+  const MessageModel =
+    mongoose.models.SeedChatMessage
+    ?? mongoose.model('SeedChatMessage', messageSchema);
+
+  await mongoose.connect(mongoUri);
+
+  try {
+    const allMessages = tickets.flatMap((ticket) => {
+      const totalMessages = randomInt(15, 20);
+      return buildChatMessagesForTicket(ticket, totalMessages);
+    });
+
+    if (allMessages.length > 0) {
+      await MessageModel.insertMany(allMessages, { ordered: false });
+    }
+
+    return allMessages.length;
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+async function seedTicketsAndMessages(
+  subjectIdsByName: Map<string, string>,
+  supportGroupIdsByName: Map<string, string>,
+  agents: SeededAgent[],
+): Promise<TicketSeedSummary> {
+  const sortedAgents = [...agents].sort((a, b) =>
+    a.email.localeCompare(b.email),
+  );
+  const defaultAgent = sortedAgents.find(
+    (agent) => agent.email === ASSIGNED_AGENT_EMAIL,
+  );
+
+  if (!defaultAgent || sortedAgents.length === 0) {
+    throw new Error('No agents found in seed data');
+  }
+
+  const clients = await prisma.user.findMany({
+    where: {
+      role: Role.CLIENT,
+      deletedAt: null,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      email: true,
+      companyId: true,
+    },
+  });
+
+  if (clients.length === 0) {
+    throw new Error('No active clients found to create tickets');
+  }
+
+  const preferredClient = clients.find(
+    (client) => client.email === PREFERRED_CLIENT_EMAIL,
+  );
+  const fallbackClient = preferredClient ?? clients[0];
+  const otherClients = clients.filter(
+    (client) => client.email !== fallbackClient.email,
+  );
+
+  const leafAssignments = collectLeafAssignments(
+    REQUESTED_TRIAGE_ROOT_BLUEPRINT,
+  );
+  if (leafAssignments.length === 0) {
+    throw new Error('No triage leaf assignments found');
+  }
+
+  const totalTickets = OPEN_TICKET_COUNT + CLOSED_TICKET_COUNT;
+  const preferredSlots = Math.min(totalTickets, 10);
+  const tickets: SeededTicket[] = [];
+
+  for (let index = 0; index < totalTickets; index += 1) {
+    const isClosed = index >= OPEN_TICKET_COUNT;
+    const status = isClosed ? TicketStatus.CLOSED : TicketStatus.OPENED;
+    const assignment = leafAssignments[index % leafAssignments.length];
+    const subjectId = subjectIdsByName.get(assignment.subjectName);
+    const supportGroupId = supportGroupIdsByName.get(assignment.targetGroupName);
+
+    if (!subjectId) {
+      throw new Error(`Subject ${assignment.subjectName} not found for ticket seed`);
+    }
+    if (!supportGroupId) {
+      throw new Error(
+        `Support group ${assignment.targetGroupName} not found for ticket seed`,
+      );
+    }
+
+    const assignedAgent = sortedAgents[index % sortedAgents.length] ?? defaultAgent;
+    let client = fallbackClient;
+    if (preferredClient && (index < preferredSlots || isClosed)) {
+      client = preferredClient;
+    } else if (otherClients.length > 0) {
+      client = otherClients[index % otherClients.length];
+    }
+
+    const createdAt = new Date(
+      Date.now() - randomInt(1, 10) * 24 * 60 * 60 * 1000,
+    );
+    const closedAt = isClosed
+      ? new Date(createdAt.getTime() + randomInt(2, 10) * 60 * 60 * 1000)
+      : null;
+
+    const priority = pickRandom([
+      TicketPriority.LOW,
+      TicketPriority.MEDIUM,
+      TicketPriority.HIGH,
+    ]);
+
+    const ratingScore = isClosed ? randomInt(4, 5) : null;
+    const ratingComment = isClosed
+      ? pickRandom([
+          'Atendimento rapido e objetivo.',
+          'Suporte atencioso e resolveu bem.',
+          'Resolvido com clareza. Obrigado.',
+        ])
+      : null;
+
+    const createdTicket = await prisma.ticket.create({
+      data: {
+        id: uuidv7(),
+        companyId: client.companyId,
+        clientId: client.id,
+        agentId: assignedAgent.id,
+        supportGroupId,
+        subjectId,
+        status,
+        priority,
+        createdAt,
+        closedAt,
+        ratingScore,
+        ratingComment,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+
+    await prisma.ticketHistory.create({
+      data: {
+        id: uuidv7(),
+        ticketId: createdTicket.id,
+        actionType: TicketAction.STATUS_CHANGE,
+        fromStatus: TicketStatus.TRIAGE,
+        toStatus: TicketStatus.OPENED,
+        fromGroupId: null,
+        toGroupId: supportGroupId,
+        fromAgentId: null,
+        toAgentId: assignedAgent.id,
+        createdAt: new Date(createdAt.getTime() + 15 * 60 * 1000),
+      },
+    });
+
+    if (isClosed) {
+      await prisma.ticketHistory.create({
+        data: {
+          id: uuidv7(),
+          ticketId: createdTicket.id,
+          actionType: TicketAction.STATUS_CHANGE,
+          fromStatus: TicketStatus.OPENED,
+          toStatus: TicketStatus.CLOSED,
+          fromGroupId: supportGroupId,
+          toGroupId: supportGroupId,
+          fromAgentId: assignedAgent.id,
+          toAgentId: assignedAgent.id,
+          createdAt: new Date(createdAt.getTime() + 2 * 60 * 60 * 1000),
+        },
+      });
+    }
+
+    tickets.push({
+      id: createdTicket.id,
+      clientId: client.id,
+      agentId: assignedAgent.id,
+      supportGroupId,
+      subjectId,
+      subjectName: assignment.subjectName,
+      status,
+      createdAt: createdTicket.createdAt,
+      closedAt,
+    });
+  }
+
+  const messageCount = await seedChatMessages(tickets);
+
+  console.log(
+    `✅ Tickets seeded (${OPEN_TICKET_COUNT} opened, ${CLOSED_TICKET_COUNT} closed)`,
+  );
+  console.log(`💬 Chat messages seeded (${messageCount})`);
+
+  return {
+    openTickets: OPEN_TICKET_COUNT,
+    closedTickets: CLOSED_TICKET_COUNT,
+    messageCount,
+  };
+}
+
 function summarizeSupportLevels(agents: SeededAgent[]) {
   const summary: Record<SupportLevel, number> = {
     [SupportLevel.LEVEL_1]: 0,
@@ -1757,14 +2038,25 @@ function summarizeSupportLevels(agents: SeededAgent[]) {
   return summary;
 }
 
-async function logSeedSummary(agents: SeededAgent[]) {
-  const [agentCount, agentGroupCount, triageNodes, triageLeaves] =
-    await Promise.all([
-      prisma.agent.count(),
-      prisma.agentGroup.count(),
-      prisma.triageRule.count(),
-      prisma.triageRule.count({ where: { isLeaf: true } }),
-    ]);
+async function logSeedSummary(
+  agents: SeededAgent[],
+  ticketSummary?: TicketSeedSummary,
+) {
+  const [
+    agentCount,
+    agentGroupCount,
+    triageNodes,
+    triageLeaves,
+    ticketCount,
+    closedTicketCount,
+  ] = await Promise.all([
+    prisma.agent.count(),
+    prisma.agentGroup.count(),
+    prisma.triageRule.count(),
+    prisma.triageRule.count({ where: { isLeaf: true } }),
+    prisma.ticket.count(),
+    prisma.ticket.count({ where: { status: TicketStatus.CLOSED } }),
+  ]);
 
   const levelSummary = summarizeSupportLevels(agents);
 
@@ -1776,6 +2068,16 @@ async function logSeedSummary(agents: SeededAgent[]) {
   console.log(`   AgentGroup assignments: ${agentGroupCount}`);
   console.log(`   Triage nodes: ${triageNodes}`);
   console.log(`   Triage leaves: ${triageLeaves}`);
+  console.log(
+    `   Tickets: ${ticketCount} (closed: ${closedTicketCount})`,
+  );
+
+  if (ticketSummary) {
+    console.log(
+      `   Seeded tickets: ${ticketSummary.openTickets} opened, ${ticketSummary.closedTickets} closed`,
+    );
+    console.log(`   Seeded chat messages: ${ticketSummary.messageCount}`);
+  }
 }
 
 async function main() {
@@ -1799,7 +2101,7 @@ async function main() {
     },
     [
       {
-        name: 'client',
+        name: 'Roberval Silva',
         email: 'client@client.com',
         phone: '+5511999000101',
         role: Role.CLIENT,
@@ -1872,7 +2174,14 @@ async function main() {
   console.log('🧩 Assigning agents to support groups...');
   await seedAgentGroupAssignments(pro4TechSeed.agents, supportGroupIdsByName);
 
-  await logSeedSummary(pro4TechSeed.agents);
+  console.log('🧾 Creating sample tickets and chat messages...');
+  const ticketSummary = await seedTicketsAndMessages(
+    subjectIdsByName,
+    supportGroupIdsByName,
+    pro4TechSeed.agents,
+  );
+
+  await logSeedSummary(pro4TechSeed.agents, ticketSummary);
 
   console.log('\n✨ Seed completed successfully!');
   console.log('📊 Test credentials:');

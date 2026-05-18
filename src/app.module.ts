@@ -10,6 +10,8 @@ import { TriageRuleModule } from './modules/triage-rule/triage-rule.module';
 import { TicketSubjectModule } from './modules/ticket-subject/ticket-subject.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './modules/chat/chat.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ChatModule } from './modules/chat/chat.module';
     TriageRuleModule,
     TicketSubjectModule,
     SupportGroupModule,
+    AdminModule,
+    ScheduleModule.forRoot()
   ],
 })
 export class AppModule {}

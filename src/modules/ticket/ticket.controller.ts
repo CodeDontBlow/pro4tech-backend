@@ -39,6 +39,11 @@ import { TicketCreateRateLimitGuard } from './guards/ticket-create-rate-limit.gu
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
+  @Get(':id/triage-history')
+    async getTriageHistory(@Param('id') id: string) {
+      return this.ticketService.getTicketTriageHistory(id);
+  }
+
   /**
    * POST /tickets
    * Criar um novo ticket
@@ -221,6 +226,21 @@ export class TicketController {
     @AuthUser() user: UserPayload,
   ): Promise<ResponseTicketDto> {
     return this.ticketService.updateTicket(ticketId, dto, user);
+  }
+
+@Patch(':id/reopen')
+  @Roles(Role.CLIENT)
+  @ApiOperation({ summary: 'Reabrir um chamado concluído' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Ticket reaberto', 
+    type: ResponseTicketDto 
+  })
+  async reopen(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.reopenTicket(ticketId, user);
   }
 
   @Patch(':id/archive')

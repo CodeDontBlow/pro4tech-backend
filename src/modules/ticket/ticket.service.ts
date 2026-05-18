@@ -17,6 +17,7 @@ import {
 } from '../../../generated/prisma/enums';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { TriageRuleService } from '../triage-rule/triage-rule.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -46,6 +47,44 @@ export class TicketService {
     private readonly ticketRepository: TicketRepository,
     private readonly triageRuleService: TriageRuleService,
   ) {}
+
+async getTicketTriageHistory(ticketId: string) {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId }
+    });
+
+    if (!ticket || !ticket.triageLeafId) {
+      return [];
+    }
+
+    const history = [];
+    let currentId = ticket.triageLeafId;
+
+    while (currentId !== null) {
+      const rule = await this.prisma.triageRule.findUnique({
+        where: { id: currentId }
+      });
+
+      if (!rule) break;
+
+      if (rule.parentId) {
+        const parent = await this.prisma.triageRule.findUnique({
+          where: { id: rule.parentId }
+        });
+
+        if (parent && parent.question) {
+          history.push({
+            question: parent.question,
+            answer: rule.answerTrigger
+          });
+        }
+      }
+
+      currentId = rule.parentId;
+    }
+
+    return history.reverse();
+  }
 
   async createTicket(dto: CreateTicketDto, user: UserPayload) {
     const role = this.getRole(user);
@@ -494,6 +533,48 @@ export class TicketService {
     this.logger.log(`Ticket excluído logicamente — id: ${ticketId}`);
   }
 
+async reopenTicket(ticketId: string, user: UserPayload) {
+  const ticket = await this.ticketRepository.findById(ticketId, {
+    includeArchived: true,
+  });
+
+  if (!ticket) {
+    this.logger.warn(`Ticket não encontrado — id: ${ticketId}`);
+    throw new NotFoundException('Ticket não encontrado');
+  }
+
+  if (ticket.isArchived) {
+    throw new BadRequestException('Ticket arquivado - não pode ser reaberto.');
+  }
+
+  if (ticket.status !== TicketStatus.RESOLVED) { 
+    this.logger.warn(`Erro ao tentar reabrir ticket — id: ${ticketId}, status: ${ticket.status}`);
+    throw new BadRequestException('Apenas tickets RESOLVIDOS podem ser reabertos.');
+  }
+
+  await this.assertTicketVisibility(ticket, user);
+
+  const updatedTicket = await this.ticketRepository.update(ticketId, {
+    status: TicketStatus.REOPENED,
+    closedAt: null, 
+  });
+
+  await this.ticketRepository.createHistory({
+    ticketId,
+    actionType: TicketAction.REOPEN,
+    fromStatus: ticket.status,
+    toStatus: TicketStatus.REOPENED,
+    fromGroupId: ticket.supportGroupId,
+    toGroupId: ticket.supportGroupId,
+    fromAgentId: ticket.agentId,
+    toAgentId: ticket.agentId,
+  });
+
+  this.logger.log(`Ticket reaberto — id: ${ticketId}, por: ${user.sub} (${user.role})`);
+
+  return updatedTicket;
+}
+
   private buildVisibilityWhere({
     user,
     status,
@@ -660,8 +741,9 @@ export class TicketService {
         TicketStatus.CLOSED,
       ],
       ESCALATED: [TicketStatus.RESOLVED, TicketStatus.CLOSED],
-      RESOLVED: [TicketStatus.CLOSED],
+      RESOLVED: [TicketStatus.CLOSED, TicketStatus.REOPENED],
       CLOSED: [],
+      REOPENED: [TicketStatus.ESCALATED, TicketStatus.RESOLVED, TicketStatus.CLOSED],
     };
 
     const allowedTransitions = validTransitions[currentStatus] || [];
@@ -672,6 +754,30 @@ export class TicketService {
       throw new BadRequestException(
         `Transição de status inválida de ${currentStatus} para ${newStatus}`,
       );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async autoCloseTickets() {
+    this.logger.log('Rotina que altera automaticamente status de chamados de RESOLVED para CLOSED.');
+
+    const timelimit = 3;
+    const dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() - timelimit);
+
+    const resultado = await this.prisma.ticket.updateMany({
+      where: {
+        status: TicketStatus.RESOLVED,
+        updatedAt: { lte: dataLimite },
+      },
+      data: {
+        status: TicketStatus.CLOSED,
+        closedAt: new Date(),
+      },
+    });
+
+    if (resultado.count > 0) {
+      this.logger.log(`Foram fechados${resultado.count} tickets.`);
     }
   }
 }

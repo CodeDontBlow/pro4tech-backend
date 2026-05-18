@@ -45,6 +45,7 @@ const TICKET_PUBLIC_SELECT = {
   closedAt: true,
   isArchived: true,
   deletedAt: true,
+  triageLeafId: true,
   client: {
     select: {
       id: true,
@@ -58,6 +59,7 @@ const TICKET_PUBLIC_SELECT = {
       user: {
         select: {
           name: true,
+          avatarUrl: true,
         },
       },
     },
