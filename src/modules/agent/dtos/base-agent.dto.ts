@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SupportLevel } from 'generated/prisma/client';
 
@@ -21,4 +21,12 @@ export class BaseAgentDto {
   @IsOptional()
   @IsBoolean({ message: 'canAnswer must be a boolean' })
   canAnswer?: boolean;
+  @ApiPropertyOptional({
+    example: 'uuid-do-grupo',
+    description: 'ID do grupo de suporte',
+  })
+  @IsOptional()
+  @IsString({ message: 'supportGroupId must be a string' })
+  supportGroupId?: string; 
 }
+
