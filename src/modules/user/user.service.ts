@@ -9,7 +9,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
-import { Role } from 'generated/prisma/client';
+import { ChatStatus, Role } from 'generated/prisma/client';
 import { SupportLevel } from 'generated/prisma/client';
 
 //repositories
@@ -91,6 +91,14 @@ export class UserService {
 
   async count(role: Role): Promise<number> {
     return this.userRepository.count(role);
+  }
+
+  async countByChatStatus(params: {
+    role?: Role;
+    isActive?: boolean;
+    chatStatus?: ChatStatus | ChatStatus[];
+  } = {}): Promise<number> {
+    return this.userRepository.countByChatStatus(params);
   }
 
   async create(data: CreateUserDto): Promise<ResponseUserDto> {

@@ -8,7 +8,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { ResponseUserDto } from './dtos/response-user.dto';
-import { Role } from 'generated/prisma/client';
+import { ChatStatus, Role } from 'generated/prisma/client';
 
 const userPublicSelect = {
   id: true,
@@ -89,11 +89,31 @@ export class UserRepository {
   });
 }
 
-  async count(role: Role): Promise<number> {
+  async count(role?: Role): Promise<number> {
     return this.prisma.user.count({
       where: {
         deletedAt: null,
         OR: role ? [{ role }] : undefined,
+      },
+    });
+  }
+
+  async countByChatStatus(params: {
+    role?: Role;
+    isActive?: boolean;
+    chatStatus?: ChatStatus | ChatStatus[];
+  } = {}): Promise<number> {
+    const { role, isActive, chatStatus } = params;
+    const chatStatusFilter = Array.isArray(chatStatus)
+      ? { in: chatStatus }
+      : chatStatus;
+
+    return this.prisma.user.count({
+      where: {
+        deletedAt: null,
+        ...(role ? { role } : {}),
+        ...(typeof isActive === 'boolean' ? { isActive } : {}),
+        ...(chatStatusFilter ? { chatStatus: chatStatusFilter } : {}),
       },
     });
   }

@@ -18,5 +18,6 @@ import { ChatMessage, ChatMessageSchema } from './schemas/chat-message.schema';
     ]),
   ],
   providers: [ChatGateway, ChatService],
+  exports: [ChatService],
 })
 export class ChatModule {}
