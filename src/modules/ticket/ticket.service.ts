@@ -18,6 +18,7 @@ import {
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { TriageRuleService } from '../triage-rule/triage-rule.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { EscalateTicketDto } from './dtos/escalate-ticket.dto';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -779,5 +780,61 @@ async reopenTicket(ticketId: string, user: UserPayload) {
     if (resultado.count > 0) {
       this.logger.log(`Foram fechados${resultado.count} tickets.`);
     }
+  }
+
+  async escalateTicket(
+    ticketId: string,
+    dto: EscalateTicketDto,
+    user: UserPayload,
+  ) {
+    const ticket = await this.ticketRepository.findById(ticketId);
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket não encontrado');
+    }
+
+    const agent = await this.prisma.agent.findFirst({
+      where: {
+        user: {
+          id: user.sub,
+        },
+      },
+    });
+
+    if (!agent) {
+      throw new ForbiddenException('Apenas agentes ou admins vinculados a um perfil de agente podem escalar tickets.');
+    }
+
+    let nextLevel = dto.targetSupportLevel ?? ticket.supportLevel;
+    if (dto.targetGroupId && dto.targetGroupId !== ticket.supportGroupId) {
+      nextLevel = null; 
+    }
+
+    const updateData: Prisma.TicketUpdateInput = {
+      status: TicketStatus.ESCALATED,
+      supportGroup: dto.targetGroupId 
+        ? { connect: { id: dto.targetGroupId } } 
+        : undefined,
+      supportLevel: nextLevel,
+      lastEscalationComment: dto.comment,
+      lastAgent: { connect: { id: agent.id } }, 
+      agent: { disconnect: true }, 
+      escalationCount: { increment: 1 }, 
+    };
+
+    const updatedTicket = await this.ticketRepository.update(ticketId, updateData);
+    
+    await this.ticketRepository.createHistory({
+      ticketId,
+      actionType: TicketAction.ESCALATION,
+      fromStatus: ticket.status,
+      toStatus: TicketStatus.ESCALATED,
+      fromGroupId: ticket.supportGroupId,
+      toGroupId: dto.targetGroupId ?? ticket.supportGroupId,
+      fromAgentId: agent.id, 
+      toAgentId: null,
+    });
+
+    return updatedTicket;
   }
 }
