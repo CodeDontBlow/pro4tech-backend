@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { TicketRepository } from '@modules/ticket/ticket.repository';
+import { TriageRuleService } from '@modules/triage-rule/triage-rule.service';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { Role } from 'generated/prisma/client';
 import { Model } from 'mongoose';
 import {
   ChatMessage,
   ChatMessageDocument,
+  ChatMessageType,
 } from './schemas/chat-message.schema';
 
 export type ChatMessageOutput = {
@@ -19,6 +21,7 @@ export type ChatMessageOutput = {
   ticketId: string;
   senderId: string;
   senderRole: Role;
+  messageType: ChatMessageType;
   content: string;
   createdAt: Date;
   editedAt?: Date | null;
@@ -31,6 +34,7 @@ export class ChatService {
     @InjectModel(ChatMessage.name)
     private readonly messageModel: Model<ChatMessageDocument>,
     private readonly ticketRepository: TicketRepository,
+    private readonly triageRuleService: TriageRuleService,
   ) {}
 
   getRoomName(ticketId: string): string {
@@ -68,9 +72,19 @@ export class ChatService {
     throw new ForbiddenException('Você não tem acesso a este chat');
   }
 
-  async getTicketMessages(ticketId: string): Promise<ChatMessageOutput[]> {
+  async getTicketMessages(
+    ticketId: string,
+    user: UserPayload,
+  ): Promise<ChatMessageOutput[]> {
     const messages = await this.messageModel
-      .find({ ticketId })
+      .find({
+        ticketId,
+        $or: [
+          { visibleToRoles: { $exists: false } },
+          { visibleToRoles: { $size: 0 } },
+          { visibleToRoles: user.role },
+        ],
+      })
       .sort({ createdAt: 1 })
       .lean();
 
@@ -79,6 +93,7 @@ export class ChatService {
       ticketId: message.ticketId,
       senderId: message.senderId,
       senderRole: message.senderRole,
+      messageType: message.messageType ?? ChatMessageType.USER,
       content: message.content,
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,
@@ -101,6 +116,7 @@ export class ChatService {
       ticketId: input.ticketId,
       senderId: input.senderId,
       senderRole: input.senderRole,
+      messageType: ChatMessageType.USER,
       content,
     });
 
@@ -173,12 +189,54 @@ export class ChatService {
     return this.toOutput(message);
   }
 
+  async ensureTriageSummaryMessages(ticketId: string): Promise<void> {
+    const ticket = await this.ticketRepository.findById(ticketId, {
+      includeArchived: false,
+      includeDeleted: false,
+    });
+
+    if (!ticket?.triageLeafId) {
+      return;
+    }
+
+    const existingCount = await this.messageModel.countDocuments({
+      ticketId,
+      messageType: ChatMessageType.TRIAGE_SUMMARY,
+    });
+
+    if (existingCount > 0) {
+      return;
+    }
+
+    const answers = await this.triageRuleService.buildPathAnswers(
+      ticket.triageLeafId,
+    );
+
+    if (answers.length === 0) {
+      return;
+    }
+
+    const baseCreatedAt = new Date(ticket.createdAt);
+    const messages = answers.map((answer, index) => ({
+      ticketId,
+      senderId: 'system:triage',
+      senderRole: Role.ADMIN,
+      messageType: ChatMessageType.TRIAGE_SUMMARY,
+      visibleToRoles: [Role.AGENT, Role.ADMIN],
+      content: `${answer.question}\n${index + 1}. ${answer.answer}`,
+      createdAt: new Date(baseCreatedAt.getTime() + index),
+    }));
+
+    await this.messageModel.insertMany(messages, { ordered: true });
+  }
+
   private toOutput(message: ChatMessageDocument): ChatMessageOutput {
     return {
       id: String(message._id),
       ticketId: message.ticketId,
       senderId: message.senderId,
       senderRole: message.senderRole,
+      messageType: message.messageType ?? ChatMessageType.USER,
       content: message.content,
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,

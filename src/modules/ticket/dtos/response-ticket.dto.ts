@@ -231,6 +231,7 @@ export class ResponseTicketDto {
     description: 'Dados reduzidos do assunto',
   })
   subject?: ResponseTicketSubjectDto | null;
+
 }
 
 class ResponseTicketPaginationMetaDto {
