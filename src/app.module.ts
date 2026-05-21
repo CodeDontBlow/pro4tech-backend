@@ -12,21 +12,27 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './modules/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
+import { config as loadEnv } from 'dotenv';
+
+loadEnv();
+
+const isChatEnabled = process.env.CHAT_ENABLED === 'true';
+
+const chatModules = isChatEnabled
+  ? [MongooseModule.forRoot(process.env.MONGO_URI), ChatModule]
+  : [];
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(
-      process.env.MONGO_URI 
-    ),
     PrismaModule,
     AuthModule,
     CompanyModule,
     UserModule,
     TicketModule,
-    ChatModule,
+    ...chatModules,
     TriageRuleModule,
     TicketSubjectModule,
     SupportGroupModule,
