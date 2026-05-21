@@ -814,7 +814,11 @@ export class TicketService {
     }
 
     let nextLevel = dto.targetSupportLevel ?? ticket.supportLevel;
-    if (dto.targetGroupId && dto.targetGroupId !== ticket.supportGroupId) {
+    if (
+      dto.targetGroupId
+      && dto.targetGroupId !== ticket.supportGroupId
+      && !dto.targetSupportLevel
+    ) {
       nextLevel = null;
     }
 
