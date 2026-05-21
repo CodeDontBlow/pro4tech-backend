@@ -20,6 +20,13 @@ export type ChatMessageOutput = {
   senderId: string;
   senderRole: Role;
   content: string;
+  attachments: {
+    url: string;
+    key: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }[];
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt?: Date | null;
@@ -80,6 +87,7 @@ export class ChatService {
       senderId: message.senderId,
       senderRole: message.senderRole,
       content: message.content,
+      attachments: message.attachments ?? [],
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,
       deletedAt: message.deletedAt ?? null,
@@ -90,10 +98,18 @@ export class ChatService {
     ticketId: string;
     senderId: string;
     senderRole: Role;
-    content: string;
+    content?: string;
+    attachments?: {
+      url: string;
+      key: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }[];
   }): Promise<ChatMessageOutput> {
-    const content = input.content.trim();
-    if (!content) {
+    const content = input.content?.trim() ?? '';
+    const attachments = input.attachments ?? [];
+    if (!content && attachments.length === 0) {
       throw new BadRequestException('Mensagem vazia não é permitida');
     }
 
@@ -102,6 +118,7 @@ export class ChatService {
       senderId: input.senderId,
       senderRole: input.senderRole,
       content,
+      attachments,
     });
 
     return this.toOutput(created);
@@ -305,6 +322,7 @@ export class ChatService {
       senderId: message.senderId,
       senderRole: message.senderRole,
       content: message.content,
+      attachments: message.attachments ?? [],
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,
       deletedAt: message.deletedAt ?? null,
