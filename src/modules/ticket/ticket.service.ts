@@ -780,4 +780,97 @@ async reopenTicket(ticketId: string, user: UserPayload) {
       this.logger.log(`Foram fechados${resultado.count} tickets.`);
     }
   }
+
+  async countOpenTickets() {
+    return this.ticketRepository.count({
+      status: {
+        in: [TicketStatus.OPENED],
+      },
+      deletedAt: null,
+      isArchived: false,
+    });
+  }
+
+  async countClosedTickets() {
+    return this.ticketRepository.count({
+      status: {
+        in: [TicketStatus.CLOSED, TicketStatus.RESOLVED],
+      },
+      deletedAt: null,
+      isArchived: false,
+    });
+  }
+
+  async countInProgressTickets() {
+    return this.ticketRepository.count({
+      status: {
+        in: [
+          TicketStatus.TRIAGE,
+          TicketStatus.ESCALATED,
+        ],
+      },
+      deletedAt: null,
+      isArchived: false,
+    });
+  }
+
+  async countReopenedTickets() {
+    return this.ticketRepository.count({
+      status: TicketStatus.REOPENED,
+      deletedAt: null,
+      isArchived: false,
+    });
+  }
+
+  async getAverageResolutionTimeMs(): Promise<number> {
+    return this.ticketRepository.getAverageResolutionTimeMs();
+  }
+
+  async getCustomerSatisfactionDistribution(): Promise<
+    Array<{ score: number; count: number }>
+  > {
+    return this.ticketRepository.getCustomerSatisfactionDistribution();
+  }
+
+  async getTicketVolumeByHour(): Promise<Array<{ hour: number; count: number }>> {
+    return this.ticketRepository.getTicketVolumeByHour();
+  }
+
+  async getTicketsPerSubject(
+    since: Date
+  ): Promise<Array<{ subjectId: string; subjectName: string; count: number }>> {
+    return this.ticketRepository.getTicketsPerSubject(since);
+  }
+
+  async getReopenRatePercent(
+    since: Date
+  ): Promise<number> {
+    return this.ticketRepository.getReopenRatePercent(since);
+  }
+
+  async getCompanyTicketStats(
+    options: { since?: Date; companyName?: string },
+    pagination: { page: number; limit: number },
+  ) {
+    return this.ticketRepository.getCompanyTicketStats(options, pagination);
+  }
+
+  async getCompanyTicketStatsTotal(
+    options: { since?: Date; companyName?: string },
+  ) {
+    return this.ticketRepository.getCompanyTicketStatsTotal(options);
+  }
+
+  async getAgentTicketStats(
+    options: { since?: Date; agentName?: string },
+    pagination: { page: number; limit: number },
+  ) {
+    return this.ticketRepository.getAgentTicketStats(options, pagination);
+  }
+
+  async getAgentTicketStatsTotal(
+    options: { since?: Date; agentName?: string },
+  ) {
+    return this.ticketRepository.getAgentTicketStatsTotal(options);
+  }
 }
