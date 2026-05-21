@@ -18,6 +18,7 @@ import {
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
 import { TriageRuleService } from '../triage-rule/triage-rule.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { EscalateTicketDto } from './dtos/escalate-ticket.dto';
 
 type ListTicketsInput = {
   user: UserPayload;
@@ -48,9 +49,9 @@ export class TicketService {
     private readonly triageRuleService: TriageRuleService,
   ) {}
 
-async getTicketTriageHistory(ticketId: string) {
+  async getTicketTriageHistory(ticketId: string) {
     const ticket = await this.prisma.ticket.findUnique({
-      where: { id: ticketId }
+      where: { id: ticketId },
     });
 
     if (!ticket || !ticket.triageLeafId) {
@@ -62,20 +63,20 @@ async getTicketTriageHistory(ticketId: string) {
 
     while (currentId !== null) {
       const rule = await this.prisma.triageRule.findUnique({
-        where: { id: currentId }
+        where: { id: currentId },
       });
 
       if (!rule) break;
 
       if (rule.parentId) {
         const parent = await this.prisma.triageRule.findUnique({
-          where: { id: rule.parentId }
+          where: { id: rule.parentId },
         });
 
         if (parent && parent.question) {
           history.push({
             question: parent.question,
-            answer: rule.answerTrigger
+            answer: rule.answerTrigger,
           });
         }
       }
@@ -533,47 +534,53 @@ async getTicketTriageHistory(ticketId: string) {
     this.logger.log(`Ticket excluído logicamente — id: ${ticketId}`);
   }
 
-async reopenTicket(ticketId: string, user: UserPayload) {
-  const ticket = await this.ticketRepository.findById(ticketId, {
-    includeArchived: true,
-  });
+  async reopenTicket(ticketId: string, user: UserPayload) {
+    const ticket = await this.ticketRepository.findById(ticketId, {
+      includeArchived: true,
+    });
 
-  if (!ticket) {
-    this.logger.warn(`Ticket não encontrado — id: ${ticketId}`);
-    throw new NotFoundException('Ticket não encontrado');
+    if (!ticket) {
+      this.logger.warn(`Ticket não encontrado — id: ${ticketId}`);
+      throw new NotFoundException('Ticket não encontrado');
+    }
+
+    if (ticket.isArchived) {
+      throw new BadRequestException('Ticket arquivado - não pode ser reaberto.');
+    }
+
+    if (ticket.status !== TicketStatus.RESOLVED) {
+      this.logger.warn(
+        `Erro ao tentar reabrir ticket — id: ${ticketId}, status: ${ticket.status}`,
+      );
+      throw new BadRequestException(
+        'Apenas tickets RESOLVIDOS podem ser reabertos.',
+      );
+    }
+
+    await this.assertTicketVisibility(ticket, user);
+
+    const updatedTicket = await this.ticketRepository.update(ticketId, {
+      status: TicketStatus.REOPENED,
+      closedAt: null,
+    });
+
+    await this.ticketRepository.createHistory({
+      ticketId,
+      actionType: TicketAction.REOPEN,
+      fromStatus: ticket.status,
+      toStatus: TicketStatus.REOPENED,
+      fromGroupId: ticket.supportGroupId,
+      toGroupId: ticket.supportGroupId,
+      fromAgentId: ticket.agentId,
+      toAgentId: ticket.agentId,
+    });
+
+    this.logger.log(
+      `Ticket reaberto — id: ${ticketId}, por: ${user.sub} (${user.role})`,
+    );
+
+    return updatedTicket;
   }
-
-  if (ticket.isArchived) {
-    throw new BadRequestException('Ticket arquivado - não pode ser reaberto.');
-  }
-
-  if (ticket.status !== TicketStatus.RESOLVED) { 
-    this.logger.warn(`Erro ao tentar reabrir ticket — id: ${ticketId}, status: ${ticket.status}`);
-    throw new BadRequestException('Apenas tickets RESOLVIDOS podem ser reabertos.');
-  }
-
-  await this.assertTicketVisibility(ticket, user);
-
-  const updatedTicket = await this.ticketRepository.update(ticketId, {
-    status: TicketStatus.REOPENED,
-    closedAt: null, 
-  });
-
-  await this.ticketRepository.createHistory({
-    ticketId,
-    actionType: TicketAction.REOPEN,
-    fromStatus: ticket.status,
-    toStatus: TicketStatus.REOPENED,
-    fromGroupId: ticket.supportGroupId,
-    toGroupId: ticket.supportGroupId,
-    fromAgentId: ticket.agentId,
-    toAgentId: ticket.agentId,
-  });
-
-  this.logger.log(`Ticket reaberto — id: ${ticketId}, por: ${user.sub} (${user.role})`);
-
-  return updatedTicket;
-}
 
   private buildVisibilityWhere({
     user,
@@ -781,6 +788,63 @@ async reopenTicket(ticketId: string, user: UserPayload) {
     }
   }
 
+  async escalateTicket(
+    ticketId: string,
+    dto: EscalateTicketDto,
+    user: UserPayload,
+  ) {
+    const ticket = await this.ticketRepository.findById(ticketId);
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket não encontrado');
+    }
+
+    const agent = await this.prisma.agent.findFirst({
+      where: {
+        user: {
+          id: user.sub,
+        },
+      },
+    });
+
+    if (!agent) {
+      throw new ForbiddenException(
+        'Apenas agentes ou admins vinculados a um perfil de agente podem escalar tickets.',
+      );
+    }
+
+    let nextLevel = dto.targetSupportLevel ?? ticket.supportLevel;
+    if (dto.targetGroupId && dto.targetGroupId !== ticket.supportGroupId) {
+      nextLevel = null;
+    }
+
+    const updateData: Prisma.TicketUpdateInput = {
+      status: TicketStatus.ESCALATED,
+      supportGroup: dto.targetGroupId
+        ? { connect: { id: dto.targetGroupId } }
+        : undefined,
+      supportLevel: nextLevel,
+      lastEscalationComment: dto.comment,
+      lastAgent: { connect: { id: agent.id } },
+      agent: { disconnect: true },
+      escalationCount: { increment: 1 },
+    };
+
+    const updatedTicket = await this.ticketRepository.update(ticketId, updateData);
+
+    await this.ticketRepository.createHistory({
+      ticketId,
+      actionType: TicketAction.ESCALATION,
+      fromStatus: ticket.status,
+      toStatus: TicketStatus.ESCALATED,
+      fromGroupId: ticket.supportGroupId,
+      toGroupId: dto.targetGroupId ?? ticket.supportGroupId,
+      fromAgentId: agent.id,
+      toAgentId: null,
+    });
+
+    return updatedTicket;
+  }
   async countOpenTickets() {
     return this.ticketRepository.count({
       status: {

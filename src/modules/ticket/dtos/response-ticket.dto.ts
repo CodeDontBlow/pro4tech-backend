@@ -231,6 +231,33 @@ export class ResponseTicketDto {
     description: 'Dados reduzidos do assunto',
   })
   subject?: ResponseTicketSubjectDto | null;
+  @ApiPropertyOptional({
+    enum: SupportLevel,
+    example: 'LEVEL_1',
+    description: 'Nível de suporte atual do ticket',
+    nullable: true,
+  })
+  supportLevel?: SupportLevel | null;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Quantidade de vezes que este ticket foi escalado',
+  })
+  escalationCount: number;
+
+  @ApiPropertyOptional({
+    example: 'Problema de conexão complexo que exige N2',
+    description: 'Último comentário deixado pelo atendente ao escalar',
+    nullable: true,
+  })
+  lastEscalationComment?: string | null;
+
+  @ApiPropertyOptional({
+    type: ResponseTicketAgentDto,
+    description: 'Dados do último agente que escalou o ticket',
+    nullable: true,
+  })
+  lastAgent?: ResponseTicketAgentDto | null;
 }
 
 class ResponseTicketPaginationMetaDto {
