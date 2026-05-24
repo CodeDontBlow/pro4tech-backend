@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateCompanyDto {
@@ -29,4 +29,12 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsEmail({}, { message: 'Invalid contact email format' })
   contactEmail?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/logos/company.png',
+    description: 'Logo da empresa',
+  })
+  @IsOptional()
+  @IsUrl({}, { message: 'logoUrl deve ser uma URL valida' })
+  logoUrl?: string;
 }

@@ -16,6 +16,7 @@ const userPublicSelect = {
   phone: true,
   email: true,
   name: true,
+  avatarUrl: true,
   role: true,
   chatStatus: true,
   lastSeen: true,
@@ -147,6 +148,7 @@ export class UserRepository {
         phone: data.phone,
         chatStatus: data.chatStatus,
         isActive: data.isActive,
+        avatarUrl: data.avatarUrl,
       },
       select: userPublicSelect,
     });
