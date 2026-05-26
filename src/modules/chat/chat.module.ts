@@ -6,12 +6,15 @@ import { TriageRuleModule } from '@modules/triage-rule/triage-rule.module';
 import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 import { ChatMessage, ChatMessageSchema } from './schemas/chat-message.schema';
+import { StorageModule } from '@modules/storage/storage.module';
+import { ChatController } from './chat.controller';
 
 @Module({
   imports: [
     AuthModule,
     TicketModule,
     TriageRuleModule,
+    StorageModule,
     MongooseModule.forFeature([
       {
         name: ChatMessage.name,
@@ -19,6 +22,8 @@ import { ChatMessage, ChatMessageSchema } from './schemas/chat-message.schema';
       },
     ]),
   ],
+  controllers: [ChatController],
   providers: [ChatGateway, ChatService],
+  exports: [ChatService],
 })
 export class ChatModule {}

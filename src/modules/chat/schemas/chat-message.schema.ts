@@ -9,6 +9,24 @@ export enum ChatMessageType {
   TRIAGE_SUMMARY = 'TRIAGE_SUMMARY',
 }
 
+@Schema({ _id: false })
+class ChatAttachment {
+  @Prop({ required: true })
+  url: string;
+
+  @Prop({ required: true })
+  key: string;
+
+  @Prop({ required: true })
+  originalName: string;
+
+  @Prop({ required: true })
+  mimeType: string;
+
+  @Prop({ required: true })
+  size: number;
+}
+
 @Schema({
   collection: 'messages',
   versionKey: false,
@@ -33,8 +51,11 @@ export class ChatMessage {
   @Prop({ type: [String], enum: Object.values(Role), default: undefined })
   visibleToRoles?: Role[];
 
-  @Prop({ required: true, trim: true, maxlength: 2000 })
+  @Prop({ trim: true, maxlength: 2000, default: '' })
   content: string;
+
+  @Prop({ type: [ChatAttachment], default: [] })
+  attachments?: ChatAttachment[];
 
   @Prop({ required: true, default: Date.now })
   createdAt: Date;

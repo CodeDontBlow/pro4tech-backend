@@ -119,6 +119,7 @@ export class AgentService {
         email: agent.user.email,
         name: agent.user.name,
         phone: agent.user.phone,
+        avatarUrl: agent.user.avatarUrl,
         role: agent.user.role,
         chatStatus: agent.user.chatStatus,
         lastSeen: agent.user.lastSeen,

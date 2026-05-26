@@ -23,6 +23,13 @@ export type ChatMessageOutput = {
   senderRole: Role;
   messageType: ChatMessageType;
   content: string;
+  attachments: {
+    url: string;
+    key: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }[];
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt?: Date | null;
@@ -95,6 +102,7 @@ export class ChatService {
       senderRole: message.senderRole,
       messageType: message.messageType ?? ChatMessageType.USER,
       content: message.content,
+      attachments: message.attachments ?? [],
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,
       deletedAt: message.deletedAt ?? null,
@@ -105,10 +113,18 @@ export class ChatService {
     ticketId: string;
     senderId: string;
     senderRole: Role;
-    content: string;
+    content?: string;
+    attachments?: {
+      url: string;
+      key: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }[];
   }): Promise<ChatMessageOutput> {
-    const content = input.content.trim();
-    if (!content) {
+    const content = input.content?.trim() ?? '';
+    const attachments = input.attachments ?? [];
+    if (!content && attachments.length === 0) {
       throw new BadRequestException('Mensagem vazia não é permitida');
     }
 
@@ -118,6 +134,7 @@ export class ChatService {
       senderRole: input.senderRole,
       messageType: ChatMessageType.USER,
       content,
+      attachments,
     });
 
     return this.toOutput(created);
@@ -230,6 +247,131 @@ export class ChatService {
     await this.messageModel.insertMany(messages, { ordered: true });
   }
 
+  async getAverageFirstResponseTimeMs(): Promise<number> {
+    const ticketWhere: any = {
+      deletedAt: null,
+      isArchived: false,
+    };
+
+    const tickets = await this.ticketRepository.findMany(ticketWhere);
+    if (tickets.length === 0) {
+      return 0;
+    }
+
+    const ticketIds = tickets.map((ticket) => ticket.id);
+    const ticketCreatedAtById = new Map(
+      tickets.map((ticket) => [ticket.id, ticket.createdAt]),
+    );
+
+    const firstResponses = await this.messageModel.aggregate<{
+      _id: string;
+      firstResponseAt: Date;
+    }>([
+      {
+        $match: {
+          senderRole: Role.AGENT,
+          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+          ticketId: { $in: ticketIds },
+        },
+      },
+      {
+        $group: {
+          _id: '$ticketId',
+          firstResponseAt: { $min: '$createdAt' },
+        },
+      },
+    ]);
+
+    if (firstResponses.length === 0) {
+      return 0;
+    }
+
+    let totalMs = 0;
+    let count = 0;
+
+    for (const item of firstResponses) {
+      const createdAt = ticketCreatedAtById.get(item._id);
+      if (!createdAt) {
+        continue;
+      }
+
+      totalMs += item.firstResponseAt.getTime() - createdAt.getTime();
+      count += 1;
+    }
+
+    if (count === 0) {
+      return 0;
+    }
+
+    return Math.round(totalMs / count);
+  }
+
+  async getAverageFirstResponseTimeByAgentMs(
+    options: { since?: Date } = {},
+  ): Promise<Record<string, number>> {
+    const { since } = options;
+    const ticketWhere: any = {
+      deletedAt: null,
+      isArchived: false,
+      agentId: { not: null },
+    };
+
+    if (since) {
+      ticketWhere.createdAt = { gte: since };
+    }
+
+    const tickets = await this.ticketRepository.findMany(ticketWhere);
+    if (tickets.length === 0) {
+      return {};
+    }
+
+    const ticketIds = tickets.map((ticket) => ticket.id);
+    const ticketCreatedAtById = new Map(
+      tickets.map((ticket) => [ticket.id, ticket.createdAt]),
+    );
+
+    const firstResponses = await this.messageModel.aggregate<{
+      _id: { ticketId: string; agentId: string };
+      firstResponseAt: Date;
+    }>([
+      {
+        $match: {
+          senderRole: Role.AGENT,
+          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+          ticketId: { $in: ticketIds },
+        },
+      },
+      {
+        $group: {
+          _id: { ticketId: '$ticketId', agentId: '$senderId' },
+          firstResponseAt: { $min: '$createdAt' },
+        },
+      },
+    ]);
+
+    const totals = new Map<string, { totalMs: number; count: number }>();
+
+    for (const item of firstResponses) {
+      const createdAt = ticketCreatedAtById.get(item._id.ticketId);
+      if (!createdAt) {
+        continue;
+      }
+
+      const diff = item.firstResponseAt.getTime() - createdAt.getTime();
+      const current = totals.get(item._id.agentId) ?? { totalMs: 0, count: 0 };
+      current.totalMs += diff;
+      current.count += 1;
+      totals.set(item._id.agentId, current);
+    }
+
+    const result: Record<string, number> = {};
+    for (const [agentId, value] of totals) {
+      result[agentId] = value.count > 0 ? Math.round(value.totalMs / value.count) : 0;
+    }
+
+    return result;
+  }
+
   private toOutput(message: ChatMessageDocument): ChatMessageOutput {
     return {
       id: String(message._id),
@@ -238,6 +380,7 @@ export class ChatService {
       senderRole: message.senderRole,
       messageType: message.messageType ?? ChatMessageType.USER,
       content: message.content,
+      attachments: message.attachments ?? [],
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,
       deletedAt: message.deletedAt ?? null,

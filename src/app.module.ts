@@ -21,6 +21,7 @@ const isChatEnabled = process.env.CHAT_ENABLED === 'true';
 const chatModules = isChatEnabled
   ? [MongooseModule.forRoot(process.env.MONGO_URI), ChatModule]
   : [];
+import { DashboardModule } from '@modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ const chatModules = isChatEnabled
     TicketSubjectModule,
     SupportGroupModule,
     AdminModule,
+    DashboardModule,
     ScheduleModule.forRoot()
   ],
 })

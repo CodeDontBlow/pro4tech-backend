@@ -110,6 +110,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       senderId: user.sub,
       senderRole: user.role as any,
       content: payload.content,
+      attachments: payload.attachments,
     });
 
     const roomName = this.chatService.getRoomName(payload.ticketId);
