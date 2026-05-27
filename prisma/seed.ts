@@ -129,6 +129,7 @@ const DEFAULT_PASSWORD = 'Password@123';
 const ASSIGNED_AGENT_EMAIL = 'agent@agent.com';
 const PREFERRED_CLIENT_EMAIL = 'client@client.com';
 const OPEN_TICKET_COUNT = 10;
+const RESOLVED_TICKET_COUNT = 6;
 const CLOSED_TICKET_COUNT = 5;
 
 const REQUIRED_GROUP_NAMES = ['BI', 'Finanças', 'Geral'] as const;
@@ -1782,7 +1783,11 @@ function buildChatMessagesForTicket(
       content =
         CLIENT_INTRO_BY_SUBJECT[ticket.subjectName]
         ?? `Preciso de ajuda com o tema: ${ticket.subjectName}.`;
-    } else if (isLast && ticket.status === TicketStatus.CLOSED) {
+    } else if (
+      isLast
+      && (ticket.status === TicketStatus.CLOSED
+        || ticket.status === TicketStatus.RESOLVED)
+    ) {
       content = isClient
         ? pickRandom(CLIENT_CLOSING_POOL)
         : pickRandom(AGENT_CLOSING_POOL);
@@ -1894,13 +1899,22 @@ async function seedTicketsAndMessages(
     throw new Error('No triage leaf assignments found');
   }
 
-  const totalTickets = OPEN_TICKET_COUNT + CLOSED_TICKET_COUNT;
+  const totalTickets =
+    OPEN_TICKET_COUNT + RESOLVED_TICKET_COUNT + CLOSED_TICKET_COUNT;
   const preferredSlots = Math.min(totalTickets, 10);
   const tickets: SeededTicket[] = [];
 
   for (let index = 0; index < totalTickets; index += 1) {
-    const isClosed = index >= OPEN_TICKET_COUNT;
-    const status = isClosed ? TicketStatus.CLOSED : TicketStatus.OPENED;
+    const isResolved =
+      index >= OPEN_TICKET_COUNT
+      && index < OPEN_TICKET_COUNT + RESOLVED_TICKET_COUNT;
+    const isClosed =
+      index >= OPEN_TICKET_COUNT + RESOLVED_TICKET_COUNT;
+    const status = isClosed
+      ? TicketStatus.CLOSED
+      : isResolved
+        ? TicketStatus.RESOLVED
+        : TicketStatus.OPENED;
     const assignment = leafAssignments[index % leafAssignments.length];
     const subjectId = subjectIdsByName.get(assignment.subjectName);
     const supportGroupId = supportGroupIdsByName.get(assignment.targetGroupName);
@@ -1914,7 +1928,10 @@ async function seedTicketsAndMessages(
       );
     }
 
-    const assignedAgent = sortedAgents[index % sortedAgents.length] ?? defaultAgent;
+    let assignedAgent = sortedAgents[index % sortedAgents.length] ?? defaultAgent;
+    if (isResolved || isClosed) {
+      assignedAgent = defaultAgent;
+    }
     let client = fallbackClient;
     if (preferredClient && (index < preferredSlots || isClosed)) {
       client = preferredClient;
@@ -1925,9 +1942,11 @@ async function seedTicketsAndMessages(
     const createdAt = new Date(
       Date.now() - randomInt(1, 10) * 24 * 60 * 60 * 1000,
     );
-    const closedAt = isClosed
-      ? new Date(createdAt.getTime() + randomInt(2, 10) * 60 * 60 * 1000)
-      : null;
+    const finalizationAt =
+      isResolved || isClosed
+        ? new Date(createdAt.getTime() + randomInt(2, 10) * 60 * 60 * 1000)
+        : null;
+    const closedAt = isClosed ? finalizationAt : null;
 
     const priority = pickRandom([
       TicketPriority.LOW,
@@ -1955,6 +1974,7 @@ async function seedTicketsAndMessages(
         status,
         priority,
         createdAt,
+        updatedAt: finalizationAt ?? createdAt,
         closedAt,
         ratingScore,
         ratingComment,
@@ -1979,6 +1999,23 @@ async function seedTicketsAndMessages(
         createdAt: new Date(createdAt.getTime() + 15 * 60 * 1000),
       },
     });
+
+    if (isResolved) {
+      await prisma.ticketHistory.create({
+        data: {
+          id: uuidv7(),
+          ticketId: createdTicket.id,
+          actionType: TicketAction.STATUS_CHANGE,
+          fromStatus: TicketStatus.OPENED,
+          toStatus: TicketStatus.RESOLVED,
+          fromGroupId: supportGroupId,
+          toGroupId: supportGroupId,
+          fromAgentId: assignedAgent.id,
+          toAgentId: assignedAgent.id,
+          createdAt: new Date(createdAt.getTime() + 2 * 60 * 60 * 1000),
+        },
+      });
+    }
 
     if (isClosed) {
       await prisma.ticketHistory.create({
@@ -2013,7 +2050,7 @@ async function seedTicketsAndMessages(
   const messageCount = await seedChatMessages(tickets);
 
   console.log(
-    `✅ Tickets seeded (${OPEN_TICKET_COUNT} opened, ${CLOSED_TICKET_COUNT} closed)`,
+    `✅ Tickets seeded (${OPEN_TICKET_COUNT} opened, ${RESOLVED_TICKET_COUNT} resolved, ${CLOSED_TICKET_COUNT} closed)`,
   );
   console.log(`💬 Chat messages seeded (${messageCount})`);
 
