@@ -1,48 +1,48 @@
 version: '3.8'
 services:
-  #   backend:
-  #     build:
-  #       context: .
-  #       dockerfile: Dockerfile
-  #     container_name: pro4tech_backend
-  #     ports:
-  #       - '3333:3333'
-  #     env_file: .env
-  #     environment:
-  #       - NODE_ENV=development
-  #     volumes:
-  #       - .:/app
-  #       - node_modules_cache:/app/node_modules
-  #     depends_on:
-  #       postgres:
-  #         condition: service_healthy
-  #     networks:
-  #       - pro4tech_net
-
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: pro4tech_postgres
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: pro4tech_backend
+  #   ports:
+  #     - '3333:3333'
+  #   env_file: .env
   #   environment:
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #     POSTGRES_DB: ${POSTGRES_DB}
-  #   ports:
-  #     - '5432:5432'
+  #     - NODE_ENV=development
   #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   healthcheck:
-  #     test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
-  #     interval: 5s
-  #     timeout: 5s
-  #     retries: 5
+  #     - .:/app
+  #     - node_modules_cache:/app/node_modules
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - pro4tech_net
 
-  # mongo:
-  #   image: mongo:7
-  #   container_name: pro4tech_mongo
-  #   ports:
-  #     - '27017:27017'
-  #   volumes:
-  #     - mongo_data:/data/db
+  postgres:
+    image: postgres:16-alpine
+    container_name: pro4tech_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: pro4tech_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
 
   minio:
     image: minio/minio:latest
@@ -73,16 +73,16 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET}
 
 volumes:
-  # postgres_data:
-  #   name: pro4tech_postgres_data
-  # mongo_data:
-  #   name: pro4tech_mongo_data
+  postgres_data:
+    name: pro4tech_postgres_data
+  mongo_data:
+    name: pro4tech_mongo_data
   minio_data:
     name: pro4tech_minio_data
-  # node_modules_cache:
-  #   name: pro4tech_node_modules
+  node_modules_cache:
+    name: pro4tech_node_modules
 
-# networks:
-#   pro4tech_net:
-#     name: pro4tech_network
-#     driver: bridge
+networks:
+  pro4tech_net:
+    name: pro4tech_network
+    driver: bridge
