@@ -202,8 +202,9 @@ export class ChatService {
     }
 
     const ticketIds = tickets.map((ticket) => ticket.id);
-    const ticketCreatedAtById = new Map(
-      tickets.map((ticket) => [ticket.id, ticket.createdAt]),
+    
+    const ticketCreatedAtById = new Map<string, number>(
+      tickets.map((ticket) => [ticket.id, new Date(ticket.createdAt).getTime()]),
     );
 
     const firstResponses = await this.messageModel.aggregate<{
@@ -212,15 +213,15 @@ export class ChatService {
     }>([
       {
         $match: {
-          senderRole: Role.AGENT,
-          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
           ticketId: { $in: ticketIds },
-        },
+          senderRole: 'AGENT', 
+          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+        }
       },
       {
         $group: {
           _id: '$ticketId',
-          firstResponseAt: { $min: '$createdAt' },
+          firstResponseAt: { $min: '$createdAt' }, 
         },
       },
     ]);
@@ -233,13 +234,18 @@ export class ChatService {
     let count = 0;
 
     for (const item of firstResponses) {
-      const createdAt = ticketCreatedAtById.get(item._id);
-      if (!createdAt) {
+      const ticketCreatedAtMs = ticketCreatedAtById.get(item._id);
+      if (!ticketCreatedAtMs) {
         continue;
       }
 
-      totalMs += item.firstResponseAt.getTime() - createdAt.getTime();
-      count += 1;
+      const firstResponseAtMs = new Date(item.firstResponseAt).getTime();
+      const diff = firstResponseAtMs - ticketCreatedAtMs;
+
+      if (diff >= 0) {
+        totalMs += diff;
+        count += 1;
+      }
     }
 
     if (count === 0) {
@@ -269,24 +275,24 @@ export class ChatService {
     }
 
     const ticketIds = tickets.map((ticket) => ticket.id);
-    const ticketCreatedAtById = new Map(
-      tickets.map((ticket) => [ticket.id, ticket.createdAt]),
+    const ticketCreatedAtById = new Map<string, number>(
+      tickets.map((ticket) => [ticket.id, new Date(ticket.createdAt).getTime()]),
     );
 
     const firstResponses = await this.messageModel.aggregate<{
-      _id: { ticketId: string; agentId: string };
+      _id: { ticketId: string; senderId: string };
       firstResponseAt: Date;
     }>([
       {
         $match: {
-          senderRole: Role.AGENT,
-          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
           ticketId: { $in: ticketIds },
+          senderRole: 'AGENT', 
+          $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
         },
       },
       {
         $group: {
-          _id: { ticketId: '$ticketId', agentId: '$senderId' },
+          _id: { ticketId: '$ticketId', senderId: '$senderId' },
           firstResponseAt: { $min: '$createdAt' },
         },
       },
@@ -295,16 +301,22 @@ export class ChatService {
     const totals = new Map<string, { totalMs: number; count: number }>();
 
     for (const item of firstResponses) {
-      const createdAt = ticketCreatedAtById.get(item._id.ticketId);
-      if (!createdAt) {
+      const ticketCreatedAtMs = ticketCreatedAtById.get(item._id.ticketId);
+      if (!ticketCreatedAtMs) {
         continue;
       }
 
-      const diff = item.firstResponseAt.getTime() - createdAt.getTime();
-      const current = totals.get(item._id.agentId) ?? { totalMs: 0, count: 0 };
+      const firstResponseAtMs = new Date(item.firstResponseAt).getTime();
+      const diff = firstResponseAtMs - ticketCreatedAtMs;
+
+      if (diff < 0) continue; 
+
+      const agentId = item._id.senderId; 
+      const current = totals.get(agentId) ?? { totalMs: 0, count: 0 };
+      
       current.totalMs += diff;
       current.count += 1;
-      totals.set(item._id.agentId, current);
+      totals.set(agentId, current);
     }
 
     const result: Record<string, number> = {};
