@@ -10,6 +10,7 @@ import {
   Matches,
   IsBoolean,
   IsEnum,
+  IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, ChatStatus } from 'generated/prisma/client';
@@ -45,6 +46,13 @@ export class BaseUserDto {
       'O número de telefone deve estar no formato internacional válido (ex: +55...)',
   })
   phone?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/avatars/user.png',
+  })
+  @IsOptional()
+  @IsUrl({}, { message: 'avatarUrl deve ser uma URL valida' })
+  avatarUrl?: string;
 
   @ApiPropertyOptional({ enum: Role })
   @IsOptional()

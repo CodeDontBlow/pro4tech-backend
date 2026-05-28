@@ -15,6 +15,9 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   AuthUser,
@@ -28,12 +31,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Role } from 'generated/prisma/client';
 import { Roles } from '@modules/auth/decorators/roles.decorator';
 import {
   ResponseCompanyDto,
   ResponseCompanyPaginationDto,
 } from './dtos/response-company.dto';
+import { StorageService } from '@modules/storage/storage.service';
 
 //swagger
 @ApiTags('Company')
@@ -42,7 +48,10 @@ import {
 @Roles(Role.ADMIN)
 @Controller('company')
 export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(
+    private readonly companyService: CompanyService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Cadastrar empresa' })
@@ -164,5 +173,48 @@ export class CompanyController {
   })
   softDelete(@Param('id') id: string, @AuthUser() user: UserPayload) {
     return this.companyService.softDelete(id, user.companyId);
+  }
+
+  @Post(':id/logo')
+  @ApiOperation({ summary: 'Atualizar logo da empresa' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da empresa',
+    example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: Number(process.env.LOGO_UPLOAD_MAX_MB ?? 5) * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowed.includes(file.mimetype)) {
+          return cb(
+            new BadRequestException('Tipo de arquivo não permitido'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadLogo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo enviado');
+    }
+
+    const uploaded = await this.storageService.uploadBuffer({
+      buffer: file.buffer,
+      mimeType: file.mimetype,
+      originalName: file.originalname,
+      prefix: `logos/${id}`,
+    });
+
+    return this.companyService.update(id, {
+      logoUrl: uploaded.url,
+    });
   }
 }

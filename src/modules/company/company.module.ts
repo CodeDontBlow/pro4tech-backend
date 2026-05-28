@@ -5,9 +5,10 @@ import { CompanyController } from './company.controller';
 
 //modules
 import { AccessCodeModule } from '@modules/accessCode/access-code.module';
+import { StorageModule } from '@modules/storage/storage.module';
 
 @Module({
-  imports: [AccessCodeModule],
+  imports: [AccessCodeModule, StorageModule],
   controllers: [CompanyController],
   providers: [CompanyService, CompanyRepository],
   exports: [CompanyService],

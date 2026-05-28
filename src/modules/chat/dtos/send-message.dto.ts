@@ -1,10 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsArray,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ChatAttachmentDto } from './chat-attachment.dto';
 
 export class SendMessageDto {
   @ApiProperty({
@@ -19,8 +24,19 @@ export class SendMessageDto {
     example: 'Olá, já assumi seu chamado.',
     description: 'Conteúdo da mensagem',
   })
+  @IsOptional()
   @IsString({ message: 'content deve ser uma string válida' })
-  @IsNotEmpty({ message: 'content é obrigatório' })
   @MaxLength(2000, { message: 'content deve ter no máximo 2000 caracteres' })
-  content: string;
+  content?: string;
+
+  @ApiProperty({
+    required: false,
+    type: [ChatAttachmentDto],
+    description: 'Anexos enviados junto com a mensagem',
+  })
+  @IsOptional()
+  @IsArray({ message: 'attachments deve ser um array' })
+  @ValidateNested({ each: true })
+  @Type(() => ChatAttachmentDto)
+  attachments?: ChatAttachmentDto[];
 }

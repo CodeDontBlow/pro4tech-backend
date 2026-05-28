@@ -20,6 +20,12 @@ class UserNestedResponseAgentDto {
   })
   phone?: string;
 
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/avatars/user.png',
+    description: 'Avatar do agent',
+  })
+  avatarUrl?: string;
+
   @ApiProperty({
     example: 'AGENT',
     enum: Role,

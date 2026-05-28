@@ -27,4 +27,9 @@ export class ResponseUserDto extends PickType(BaseUserDto, [
 
   @ApiPropertyOptional({ example: '2026-03-28T12:34:56.000Z' })
   lastLogin?: Date;
+
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/avatars/user.png',
+  })
+  avatarUrl?: string;
 }

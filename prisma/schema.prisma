@@ -85,6 +85,7 @@ model Company {
     name            String   
     contactName     String?
     contactEmail    String?         @unique
+    logoUrl         String?
     accessCode      String          @unique
     isActive        Boolean         @default(true)
     createdAt       DateTime        @default(now())
