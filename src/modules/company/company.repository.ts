@@ -8,7 +8,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { ResponseCompanyDto } from './dtos/response-company.dto';
-import { equal } from 'node:assert';
+import { Role } from 'generated/prisma/client';
 
 @Injectable()
 export class CompanyRepository {
@@ -90,6 +90,24 @@ export class CompanyRepository {
         ...data,
       },
     });
+  }
+
+  async updateClientAvatars(
+    companyId: string,
+    avatarUrl: string,
+  ): Promise<number> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        companyId,
+        role: Role.CLIENT,
+        deletedAt: null,
+      },
+      data: {
+        avatarUrl,
+      },
+    });
+
+    return result.count;
   }
 
   async softDelete(id: string): Promise<ResponseCompanyDto> {

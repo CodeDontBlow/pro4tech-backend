@@ -11,6 +11,8 @@ import { TicketSubjectModule } from './modules/ticket-subject/ticket-subject.mod
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './modules/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminModule } from './modules/admin/admin.module';
+import { DashboardModule } from '@modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     TriageRuleModule,
     TicketSubjectModule,
     SupportGroupModule,
+    AdminModule,
+    DashboardModule,
     ScheduleModule.forRoot()
   ],
 })

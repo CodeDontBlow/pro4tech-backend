@@ -26,6 +26,7 @@ enum TicketStatus {
     ESCALATED
     CLOSED
     RESOLVED
+    REOPENED
 }
 
 enum TicketPriority {
@@ -42,6 +43,7 @@ enum TicketAction {
     ARCHIVE
     UNARCHIVE
     SOFT_DELETE
+    REOPEN
 }
 
 enum SupportLevel {
@@ -83,6 +85,7 @@ model Company {
     name            String   
     contactName     String?
     contactEmail    String?         @unique
+    logoUrl         String?
     accessCode      String          @unique
     isActive        Boolean         @default(true)
     createdAt       DateTime        @default(now())
@@ -103,6 +106,7 @@ model Agent {
     tickets         Ticket[]        @relation("AgentTicket")
     historyFrom     TicketHistory[] @relation("FromAgent")
     historyTo       TicketHistory[] @relation("ToAgent")
+    lastEscalatedTickets Ticket[]  @relation("LastAgentRelation")
 }
 
 model SupportGroup {
@@ -152,7 +156,12 @@ model Ticket {
     closedAt        DateTime?
     isArchived      Boolean         @default(false)
     deletedAt       DateTime?
-    
+    supportLevel          SupportLevel?  
+    escalationCount       Int            @default(0) 
+    lastEscalationComment String?        
+    lastAgentId           String?
+
+    lastAgent             Agent?         @relation("LastAgentRelation", fields: [lastAgentId], references: [id])
     client          User            @relation("ClientTicket", fields: [clientId], references: [id])
     agent           Agent?          @relation("AgentTicket", fields: [agentId], references: [id])
     company         Company         @relation(fields: [companyId], references: [id])

@@ -34,6 +34,13 @@ export class ResponseCompanyDto {
   })
   accessCode: string;
 
+  @ApiProperty({
+    example: 'https://files.local/pro4tech/logos/company.png',
+    description: 'Logo da empresa',
+    required: false,
+  })
+  logoUrl?: string;
+
   @ApiProperty({ example: true, description: 'Empresa está ativa?' })
   isActive: boolean;
 }

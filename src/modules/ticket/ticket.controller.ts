@@ -32,6 +32,7 @@ import { Role } from 'generated/prisma/client';
 import { TicketStatus } from '../../../generated/prisma/enums';
 import { ResponsePaginationDto } from '@common/dtos/response-pagination.dto';
 import { TicketCreateRateLimitGuard } from './guards/ticket-create-rate-limit.guard';
+import { EscalateTicketDto } from './dtos/escalate-ticket.dto';
 
 @ApiBearerAuth()
 @ApiTags('Ticket')
@@ -228,6 +229,21 @@ export class TicketController {
     return this.ticketService.updateTicket(ticketId, dto, user);
   }
 
+@Patch(':id/reopen')
+  @Roles(Role.CLIENT)
+  @ApiOperation({ summary: 'Reabrir um chamado concluído' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Ticket reaberto', 
+    type: ResponseTicketDto 
+  })
+  async reopen(
+    @Param('id') ticketId: string,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.reopenTicket(ticketId, user);
+  }
+
   @Patch(':id/archive')
   @Roles(Role.AGENT, Role.ADMIN)
   @ApiOperation({ summary: 'Arquivar ticket' })
@@ -258,6 +274,22 @@ export class TicketController {
     return this.ticketService.unarchiveTicket(ticketId, user);
   }
 
+  @Patch(':id/escalate')
+  @Roles(Role.AGENT, Role.ADMIN)
+  @ApiOperation({ summary: 'Escalar um ticket (mudar nível ou grupo com comentário)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ticket escalado com sucesso',
+    type: ResponseTicketDto,
+  })
+  async escalate(
+    @Param('id') ticketId: string,
+    @Body() dto: EscalateTicketDto,
+    @AuthUser() user: UserPayload,
+  ): Promise<ResponseTicketDto> {
+    return this.ticketService.escalateTicket(ticketId, dto, user);
+  }
+  
   /**
    * DELETE /tickets/:id
    * Exclusão lógica de ticket
