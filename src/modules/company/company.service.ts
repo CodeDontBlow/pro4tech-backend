@@ -126,7 +126,19 @@ export class CompanyService {
     }
 
     await this.validateContactEmailNotInUse(data.contactEmail, id);
-    return this.companyRepository.update(id, data);
+    const updatedCompany = await this.companyRepository.update(id, data);
+
+    if (typeof data.logoUrl !== 'undefined') {
+      const updatedUsers = await this.companyRepository.updateClientAvatars(
+        id,
+        data.logoUrl,
+      );
+      this.logger.log(
+        `Client avatars synced with company logo — companyId: ${id}, users: ${updatedUsers}`,
+      );
+    }
+
+    return updatedCompany;
   }
 
   async softDelete(
