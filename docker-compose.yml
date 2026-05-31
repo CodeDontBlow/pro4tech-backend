@@ -1,91 +1,76 @@
+version: '3.8'
 services:
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: pro4tech_backend
+  #   ports:
+  #     - '3333:3333'
+  #   env_file: .env
+  #   environment:
+  #     - NODE_ENV=development
+  #   volumes:
+  #     - .:/app
+  #     - node_modules_cache:/app/node_modules
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - pro4tech_net
 
-  # ── Backend NestJS ───────────────────────────────────────────
-  backend:
-    build:
-      context: ./pro4tech-backend
-      dockerfile: Dockerfile
-    image: pro4tech-backend:latest
-    container_name: pro4tech_backend
-    restart: unless-stopped
-    ports:
-      - "3333:3333"
-    env_file: .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongo:
-        condition: service_started
-      minio:
-        condition: service_started
-    networks:
-      - back-net
-
-  # ── PostgreSQL ───────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: pro4tech_postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 5s
       timeout: 5s
-      retries: 10
-    networks:
-      - back-net
+      retries: 5
 
-  # ── MongoDB ──────────────────────────────────────────────────
   mongo:
     image: mongo:7
     container_name: pro4tech_mongo
-    restart: unless-stopped
+    ports:
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
-    networks:
-      - back-net
 
-  # ── MinIO ────────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
     container_name: pro4tech_minio
-    restart: unless-stopped
     environment:
-      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    command: server /data
+    command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"       # API — usada pelo backend
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio_data:/data
-    networks:
-      - back-net
 
-  # ── MinIO Init (roda uma vez e encerra) ──────────────────────
   minio-init:
     image: minio/mc:latest
-    container_name: pro4tech_minio_init
     depends_on:
       - minio
     entrypoint: >
       /bin/sh -c "
-        sleep 5 &&
-        mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY} &&
-        mc mb -p local/$${MINIO_BUCKET} || true &&
-        mc anonymous set public local/$${MINIO_BUCKET} || true
+      mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY} &&
+      mc mb -p local/$${MINIO_BUCKET} || true &&
+      mc anonymous set public local/$${MINIO_BUCKET} || true
       "
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_BUCKET:     ${MINIO_BUCKET}
-    restart: "no"
-    networks:
-      - back-net
+      MINIO_BUCKET: ${MINIO_BUCKET}
 
 volumes:
   postgres_data:
@@ -94,7 +79,10 @@ volumes:
     name: pro4tech_mongo_data
   minio_data:
     name: pro4tech_minio_data
+  node_modules_cache:
+    name: pro4tech_node_modules
 
 networks:
-  back-net:
+  pro4tech_net:
+    name: pro4tech_network
     driver: bridge
