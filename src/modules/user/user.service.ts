@@ -127,6 +127,10 @@ export class UserService {
       {
         ...data,
         companyId: companyId,
+        avatarUrl:
+          (data.role ?? Role.CLIENT) === Role.CLIENT
+            ? data.avatarUrl ?? company.logoUrl
+            : data.avatarUrl,
         password: hashedPassword,
       },
       userId,
