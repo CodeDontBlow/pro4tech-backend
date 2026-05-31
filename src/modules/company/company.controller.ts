@@ -19,6 +19,7 @@ import {
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
+import { Public } from '@modules/auth/decorators/public.decorator';
 import {
   AuthUser,
   UserPayload,
@@ -45,7 +46,6 @@ import { StorageService } from '@modules/storage/storage.service';
 @ApiTags('Company')
 @ApiBearerAuth()
 //guards
-@Roles(Role.ADMIN)
 @Controller('company')
 export class CompanyController {
   constructor(
@@ -54,6 +54,7 @@ export class CompanyController {
   ) {}
 
   @Post('register')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Cadastrar empresa' })
   @ApiResponse({
     status: 201,
@@ -67,8 +68,8 @@ export class CompanyController {
   create(@Body() dto: CreateCompanyDto) {
     return this.companyService.create(dto);
   }
-
   @Get()
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar empresas (paginado)' })
   @ApiQuery({
     name: 'page',
@@ -77,6 +78,7 @@ export class CompanyController {
     example: 1,
     description: 'Número da página (padrão: 1)',
   })
+  @Roles(Role.ADMIN)
   @ApiQuery({
     name: 'limit',
     required: false,
@@ -108,7 +110,34 @@ export class CompanyController {
     });
   }
 
+  @Get('lookup/:code')
+  @Public()
+  findByAccessCode(@Param('code') code: string) {
+    return this.companyService.findByAccessCode(code);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obter empresa por ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da empresa',
+    example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Empresa encontrada com sucesso',
+    type: ResponseCompanyDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Empresa não encontrada',
+  })
+  findById(@Param('id') id: string) {
+    return this.companyService.findById(id);
+  }
+
   @Patch('me')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar empresa do usuário autenticado' })
   @ApiResponse({
     status: 200,
@@ -128,6 +157,7 @@ export class CompanyController {
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar empresa por ID' })
   @ApiParam({
     name: 'id',
@@ -152,6 +182,7 @@ export class CompanyController {
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Desativar empresa (soft delete)' })
   @ApiParam({
     name: 'id',

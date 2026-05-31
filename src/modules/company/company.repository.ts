@@ -8,11 +8,11 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { ResponseCompanyDto } from './dtos/response-company.dto';
-import { equal } from 'node:assert';
+import { Role } from 'generated/prisma/client';
 
 @Injectable()
 export class CompanyRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findById(id: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
@@ -29,6 +29,13 @@ export class CompanyRepository {
   async findByContactEmail(email: string): Promise<ResponseCompanyDto | null> {
     return this.prisma.company.findUnique({
       where: { contactEmail: email, deletedAt: null },
+    });
+  }
+
+  async findByAccessCode(code: string) {
+    return this.prisma.company.findFirst({
+      where: { accessCode: code, isActive: true },
+      select: { id: true, name: true },
     });
   }
 
@@ -64,9 +71,9 @@ export class CompanyRepository {
         NOT: { cnpj: { equals: '11.111.111/0001-11' } },
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { cnpj: { contains: search } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { cnpj: { contains: search } },
+          ]
           : undefined,
       },
       orderBy: { createdAt: 'desc' },
@@ -83,6 +90,24 @@ export class CompanyRepository {
         ...data,
       },
     });
+  }
+
+  async updateClientAvatars(
+    companyId: string,
+    avatarUrl: string,
+  ): Promise<number> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        companyId,
+        role: Role.CLIENT,
+        deletedAt: null,
+      },
+      data: {
+        avatarUrl,
+      },
+    });
+
+    return result.count;
   }
 
   async softDelete(id: string): Promise<ResponseCompanyDto> {
@@ -104,9 +129,9 @@ export class CompanyRepository {
         deletedAt: null,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { cnpj: { contains: search } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { cnpj: { contains: search } },
+          ]
           : undefined,
       },
     });

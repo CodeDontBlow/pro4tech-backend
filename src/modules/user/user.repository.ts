@@ -134,6 +134,7 @@ export class UserRepository {
         email: data.email,
         hashedPassword: data.password,
         name: data.name,
+        avatarUrl: data.avatarUrl,
         role: data.role ?? 'CLIENT',
       },
       select: userPublicSelect,
