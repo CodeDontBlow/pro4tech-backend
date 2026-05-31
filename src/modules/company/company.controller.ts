@@ -107,6 +107,26 @@ export class CompanyController {
     return this.companyService.findByAccessCode(code);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Obter empresa por ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da empresa',
+    example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Empresa encontrada com sucesso',
+    type: ResponseCompanyDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Empresa não encontrada',
+  })
+  findById(@Param('id') id: string) {
+    return this.companyService.findById(id);
+  }
+
   @Patch('me')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar empresa do usuário autenticado' })
