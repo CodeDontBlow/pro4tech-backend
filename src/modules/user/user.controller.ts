@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -53,6 +54,15 @@ export class UserController {
   @Patch('me')
   updateMe(@AuthUser() user: UserPayload, @Body() dto: UpdateUserDto) {
     return this.userService.update(user.sub, dto);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  updateById(
+    @Param('id') id: string,
+    @Body(new ValidationPipe({ whitelist: true, transform: true })) dto: UpdateUserDto,
+  ) {
+    return this.userService.update(id, dto);
   }
 
   @Delete('me')
