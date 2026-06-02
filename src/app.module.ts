@@ -8,7 +8,6 @@ import { TicketModule } from './modules/ticket/ticket.module';
 import { SupportGroupModule } from './modules/support-group/support-group.module';
 import { TriageRuleModule } from './modules/triage-rule/triage-rule.module';
 import { TicketSubjectModule } from './modules/ticket-subject/ticket-subject.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './modules/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
@@ -16,11 +15,6 @@ import { config as loadEnv } from 'dotenv';
 
 loadEnv();
 
-const isChatEnabled = process.env.CHAT_ENABLED === 'true';
-
-const chatModules = isChatEnabled
-  ? [MongooseModule.forRoot(process.env.MONGO_URI), ChatModule]
-  : [];
 import { DashboardModule } from '@modules/dashboard/dashboard.module';
 
 @Module({
@@ -33,7 +27,7 @@ import { DashboardModule } from '@modules/dashboard/dashboard.module';
     CompanyModule,
     UserModule,
     TicketModule,
-    ...chatModules,
+    ChatModule,
     TriageRuleModule,
     TicketSubjectModule,
     SupportGroupModule,
