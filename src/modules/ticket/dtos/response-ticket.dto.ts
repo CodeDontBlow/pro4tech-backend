@@ -17,6 +17,12 @@ class ResponseTicketClientDto {
     description: 'Nome do cliente',
   })
   name: string;
+
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/logos/company.png',
+    description: 'URL do avatar do cliente',
+  })
+  avatarUrl?: string;
 }
 
 class ResponseTicketAgentUserDto {
@@ -65,6 +71,12 @@ class ResponseTicketCompanyDto {
     description: 'Nome da empresa',
   })
   name: string;
+
+  @ApiPropertyOptional({
+    example: 'https://files.local/pro4tech/logos/company.png',
+    description: 'Logo da empresa',
+  })
+  logoUrl?: string;
 }
 
 class ResponseTicketSupportGroupDto {

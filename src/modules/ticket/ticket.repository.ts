@@ -49,6 +49,7 @@ const TICKET_PUBLIC_SELECT = {
     select: {
       id: true,
       name: true,
+      avatarUrl: true,
     },
   },
   agent: {
@@ -67,6 +68,7 @@ const TICKET_PUBLIC_SELECT = {
     select: {
       id: true,
       name: true,
+      logoUrl: true,
     },
   },
   supportGroup: {

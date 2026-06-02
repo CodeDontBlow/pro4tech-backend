@@ -130,6 +130,15 @@ export class AgentRepository {
       updateData.canAnswer = data.canAnswer;
     }
 
+    if (data.supportGroupId !== undefined) {
+      updateData.agentGroups = {
+        deleteMany: {},
+      };
+      if (data.supportGroupId) {
+        updateData.agentGroups.create = [{ supportGroupId: data.supportGroupId }];
+      }
+    }
+
     if (Object.keys(updateData).length === 0) {
       return this.findById(agentId);
     }

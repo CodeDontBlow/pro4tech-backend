@@ -127,6 +127,10 @@ export class UserService {
       {
         ...data,
         companyId: companyId,
+        avatarUrl:
+          (data.role ?? Role.CLIENT) === Role.CLIENT
+            ? data.avatarUrl ?? company.logoUrl
+            : data.avatarUrl,
         password: hashedPassword,
       },
       userId,
@@ -217,10 +221,20 @@ export class UserService {
           user: {
             connect: { id: user.id },
           },
-          supportLevel: SupportLevel.LEVEL_1,
+          supportLevel: data.supportLevel ?? SupportLevel.LEVEL_1,
           canAnswer: true,
         },
       });
+
+      if (data.supportGroupId) {
+        await tx.agentGroup.create({
+          data: {
+            agentId: user.id,
+            supportGroupId: data.supportGroupId,
+          },
+        });
+      }
+
       this.logger.log(`Agent and User created successfully — id: ${user.id}`);
       return user;
     });
