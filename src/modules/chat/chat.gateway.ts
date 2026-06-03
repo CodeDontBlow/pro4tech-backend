@@ -25,7 +25,7 @@ type SocketWithUser = Socket & {
 };
 
 @WebSocketGateway({
-  namespace: 'chat',
+  namespace: 'ws',
   cors: {
     origin: '*',
   },

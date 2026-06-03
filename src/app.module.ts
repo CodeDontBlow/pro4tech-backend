@@ -13,6 +13,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
 import { DashboardModule } from '@modules/dashboard/dashboard.module';
+import { AgentStandardMessageModule } from './modules/agent-standard-message/agent-standard-message.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DashboardModule } from '@modules/dashboard/dashboard.module';
     SupportGroupModule,
     AdminModule,
     DashboardModule,
+    AgentStandardMessageModule,
     ScheduleModule.forRoot()
   ],
 })

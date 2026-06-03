@@ -94,6 +94,7 @@ model Company {
 
     users           User[]
     tickets         Ticket[]
+    standardMessages AgentStandardMessage[]
 }
 
 model Agent {
@@ -107,6 +108,25 @@ model Agent {
     historyFrom     TicketHistory[] @relation("FromAgent")
     historyTo       TicketHistory[] @relation("ToAgent")
     lastEscalatedTickets Ticket[]  @relation("LastAgentRelation")
+    standardMessages AgentStandardMessage[]
+}
+
+model AgentStandardMessage {
+    id              String          @id
+    agentId         String
+    companyId       String
+    title           String
+    trigger         String
+    content         String
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+
+    agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+    @@unique([agentId, trigger])
+    @@index([companyId])
+    @@index([agentId])
 }
 
 model SupportGroup {
