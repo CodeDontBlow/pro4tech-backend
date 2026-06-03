@@ -34,6 +34,11 @@ type ExistingRuleSnapshot = {
   subjectId: string | null;
 };
 
+export type TriagePathAnswer = {
+  question: string;
+  answer: string;
+};
+
 @Injectable()
 export class TriageRuleService {
   constructor(
@@ -295,6 +300,48 @@ async findRoot(): Promise<ResponseTriageRuleDto> {
       subjectId: triageLeaf.subjectId,
       supportGroupId: triageLeaf.targetGroupId,
     };
+  }
+
+  async buildPathAnswers(triageLeafId: string): Promise<TriagePathAnswer[]> {
+    const path: Array<{
+      question: string | null;
+      answerTrigger: string | null;
+    }> = [];
+
+    let currentNodeId: string | null = triageLeafId;
+
+    while (currentNodeId) {
+      const node = await this.prisma.triageRule.findUnique({
+        where: { id: currentNodeId },
+        select: {
+          parentId: true,
+          answerTrigger: true,
+          parent: {
+            select: {
+              question: true,
+            },
+          },
+        },
+      });
+
+      if (!node) {
+        throw new NotFoundException('Nó de triagem não encontrado');
+      }
+
+      if (node.parent?.question && node.answerTrigger) {
+        path.unshift({
+          question: node.parent.question,
+          answerTrigger: node.answerTrigger,
+        });
+      }
+
+      currentNodeId = node.parentId;
+    }
+
+    return path.map((item) => ({
+      question: item.question ?? '',
+      answer: item.answerTrigger ?? '',
+    }));
   }
 
   private resolveParentId(

@@ -35,6 +35,7 @@ const TICKET_PUBLIC_SELECT = {
   agentId: true,
   supportGroupId: true,
   subjectId: true,
+  triageLeafId: true,
   status: true,
   priority: true,
   ratingScore: true,
@@ -44,7 +45,6 @@ const TICKET_PUBLIC_SELECT = {
   closedAt: true,
   isArchived: true,
   deletedAt: true,
-  triageLeafId: true,
   client: {
     select: {
       id: true,

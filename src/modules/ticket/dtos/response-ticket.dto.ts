@@ -270,6 +270,7 @@ export class ResponseTicketDto {
     nullable: true,
   })
   lastAgent?: ResponseTicketAgentDto | null;
+
 }
 
 class ResponseTicketPaginationMetaDto {

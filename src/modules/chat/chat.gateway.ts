@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { Public } from '@modules/auth/decorators/public.decorator';
 import { UserPayload } from 'src/common/decorators/auth-user.decorator';
+import { Role } from 'generated/prisma/client';
 import { Server, Socket } from 'socket.io';
 import { JoinRoomDto } from './dtos/join-room.dto';
 import { SendMessageDto } from './dtos/send-message.dto';
@@ -83,7 +84,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const roomName = this.chatService.getRoomName(payload.ticketId);
     client.join(roomName);
 
-    const history = await this.chatService.getTicketMessages(payload.ticketId);
+    if (user.role === Role.AGENT || user.role === Role.ADMIN) {
+      await this.chatService.ensureTriageSummaryMessages(payload.ticketId);
+    }
+
+    const history = await this.chatService.getTicketMessages(payload.ticketId, user);
 
     client.emit('joinedRoom', { ticketId: payload.ticketId });
     client.emit('chatHistory', history);

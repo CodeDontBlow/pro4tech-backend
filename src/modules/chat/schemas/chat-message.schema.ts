@@ -4,6 +4,11 @@ import { HydratedDocument } from 'mongoose';
 
 export type ChatMessageDocument = HydratedDocument<ChatMessage>;
 
+export enum ChatMessageType {
+  USER = 'USER',
+  TRIAGE_SUMMARY = 'TRIAGE_SUMMARY',
+}
+
 @Schema({ _id: false })
 class ChatAttachment {
   @Prop({ required: true })
@@ -36,6 +41,16 @@ export class ChatMessage {
   @Prop({ required: true, enum: Object.values(Role) })
   senderRole: Role;
 
+  @Prop({
+    required: true,
+    enum: Object.values(ChatMessageType),
+    default: ChatMessageType.USER,
+  })
+  messageType: ChatMessageType;
+
+  @Prop({ type: [String], enum: Object.values(Role), default: undefined })
+  visibleToRoles?: Role[];
+
   @Prop({ trim: true, maxlength: 2000, default: '' })
   content: string;
 
@@ -55,3 +70,4 @@ export class ChatMessage {
 export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessage);
 
 ChatMessageSchema.index({ ticketId: 1, createdAt: 1 });
+ChatMessageSchema.index({ ticketId: 1, messageType: 1 });

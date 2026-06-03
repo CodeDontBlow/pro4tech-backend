@@ -159,6 +159,7 @@ export class UserRepository {
     await this.prisma.user.update({
       where: { id: id },
       data: { lastLogin: new Date() },
+      select: { id: true },
     });
   }
 
